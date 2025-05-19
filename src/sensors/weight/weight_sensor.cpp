@@ -27,9 +27,20 @@ void initWeight() {
   Serial.println("📌 เริ่มวัดน้ำหนัก...");
 }
 
-void readWeight() {
+StaticJsonDocument<256> readWeight() {
+  StaticJsonDocument<256> doc;
+  doc["name"] = WEIGHT_SENSOR;
+  JsonArray values = doc.createNestedArray("value");
+
   float weight = scale.get_units(10);
   Serial.print("⚖️ น้ำหนัก foo: ");
   Serial.print(weight, 3);
   Serial.println(" kg");
+
+  JsonObject weightValue = values.createNestedObject();
+  weightValue["type"] = "weight";
+  weightValue["unit"] = "kg";
+  weightValue["value"] = weight;
+
+  return doc;
 }

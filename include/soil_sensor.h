@@ -2,10 +2,16 @@
 #define SOIL_SENSOR_H
 
 #include <Arduino.h>
+#include <ArduinoJson.h>
 
-#define SOIL_PIN A2  // AO ต่อกับ A2 ของ Arduino Mega
+// Pin definitions
+#define SOIL_PIN A0
 
+// Sensor name
+#define SOIL_SENSOR "SOIL_MOISTURE"
+
+// Function declarations
 void initSoil();
-void readSoil();
+StaticJsonDocument<256> readSoil();
 
-#endif
+#endif // SOIL_SENSOR_H
