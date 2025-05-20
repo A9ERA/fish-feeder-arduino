@@ -6,6 +6,8 @@
 #include "weight_sensor.h"
 #include "mqtt_service.h"
 #include "config.h"
+#include "acs712_sensor.h"
+#include "voltage_sensor.h"
 
 bool connectToWiFi() {
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -40,6 +42,8 @@ void setup() {
   initSoil();
   initWaterTemp();
   initWeight();
+  initACS712();
+  initVoltageSensor();
   mqttService.init();
 }
 
@@ -50,9 +54,14 @@ void loop() {
   mqttService.publishSensorData(readSoil());
   mqttService.publishSensorData(readWaterTemp());
   mqttService.publishSensorData(readWeight());
-
+  mqttService.publishSensorData(readACS712());
+  mqttService.publishSensorData(readVoltageSensor());
+  
+  // Handle MQTT loop
   mqttService.loop();
-  delay(1000);
+  
+  // Wait before next reading
+  delay(5000);  // 5 seconds delay
 }
 
 

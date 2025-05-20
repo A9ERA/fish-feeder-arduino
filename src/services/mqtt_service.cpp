@@ -33,6 +33,9 @@ bool MQTTService::connectToMQTT() {
 }
 
 bool MQTTService::publishSensorData(const JsonDocument& payload) {
+    if (!MQTT_PUBLISH_SENSOR_DATA) {
+        return true;
+    }
     if (!mqttClient.connected()) {
         if (!connectToMQTT()) {
             return false;

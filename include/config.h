@@ -12,5 +12,7 @@
 #define MQTT_PORT 1883
 #define MQTT_TOPIC "fish_feeder/sensors"
 
+// MQTT Publishing Control
+#define MQTT_PUBLISH_SENSOR_DATA true  // Set to false to disable sensor data publishing
 
 #endif
