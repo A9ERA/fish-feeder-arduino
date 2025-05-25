@@ -23,16 +23,16 @@ void loop() {
   
   String jsonString;
   
-  // // DHT System
-  // StaticJsonDocument<256> dhtSystem = readDHTSystem();
-  // serializeJson(dhtSystem, jsonString);
-  // Serial.println("[SEND] - " + jsonString);
-
-  // DHT Feeder
-  StaticJsonDocument<256> dhtFeeder = readDHTFeeder();
-  jsonString = "";
-  serializeJson(dhtFeeder, jsonString);
+  // DHT System 48
+  StaticJsonDocument<256> dhtSystem = readDHTSystem();
+  serializeJson(dhtSystem, jsonString);
   Serial.println("[SEND] - " + jsonString);
+
+  // // DHT Feeder 46
+  // StaticJsonDocument<256> dhtFeeder = readDHTFeeder();
+  // jsonString = "";
+  // serializeJson(dhtFeeder, jsonString);
+  // Serial.println("[SEND] - " + jsonString);
 
   // // Soil Sensor
   // StaticJsonDocument<256> soil = readSoil();
