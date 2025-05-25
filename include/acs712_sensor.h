@@ -13,5 +13,7 @@
 // Function declarations
 void initACS712();
 StaticJsonDocument<256> readACS712();
+double readCurrentOnce();
+double readAverageCurrent();
 
 #endif 
