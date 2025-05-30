@@ -41,6 +41,10 @@ void setBlowerDirection(bool reverse) {
 
 // ฟังก์ชันอัปเดตสถานะของ Blower ตามค่าปัจจุบัน
 void updateBlower() {
+  Serial.println("updateBlower");
+  Serial.println(isRunning);
+  Serial.println(isReverse);
+  Serial.println(currentSpeed);
   if (isRunning) {
     if (isReverse) {
       analogWrite(LPWM, currentSpeed); // หมุนย้อนกลับ
