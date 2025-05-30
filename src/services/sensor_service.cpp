@@ -9,6 +9,9 @@
 #include "voltage_sensor.h"
 #include "sensor_service.h"
 
+// Forward declaration of printJson function
+static void printJson(String jsonString);
+
 enum DeviceType {
     DEVICE_UNKNOWN,
     DEVICE_BLOWER,
