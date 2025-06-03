@@ -4,11 +4,9 @@
 // ฟังก์ชันสร้างออบเจ็กต์ RelaySensor
 RelaySensor::RelaySensor() {
     // ตั้งค่าเริ่มต้นพินสำหรับรีเลย์
-    pinMode(RELAY_1_PIN, OUTPUT);
     pinMode(RELAY_2_PIN, OUTPUT);
     
     // ตั้งค่ารีเลย์ให้อยู่ในสถานะ OFF (HIGH = OFF สำหรับโมดูลรีเลย์ส่วนใหญ่)
-    digitalWrite(RELAY_1_PIN, HIGH);
     digitalWrite(RELAY_2_PIN, HIGH);
 }
 
@@ -17,24 +15,24 @@ void RelaySensor::begin() {
     // แสดงข้อความพร้อมใช้งาน
     Serial.println("📌 Relay Control Ready");
     Serial.println("คำสั่งที่รองรับ:");
-    Serial.println("[control]:relay:on    - เปิดรีเลย์ทั้งหมด");
-    Serial.println("[control]:relay:off   - ปิดรีเลย์ทั้งหมด");
+    Serial.println("[control]:relay:on    - เปิดรีเลย์ 2");
+    Serial.println("[control]:relay:off   - ปิดรีเลย์ 2");
     Serial.println("[control]:status      - แสดงสถานะรีเลย์");
 }
 
 // ฟังก์ชันตรวจสอบหมายเลขรีเลย์ว่าถูกต้องหรือไม่
 bool RelaySensor::isValidRelayNumber(int relayNum) {
-    return (relayNum == 1 || relayNum == 2);
+    return (relayNum == 2);  // มีเฉพาะรีเลย์ 2
 }
 
 // ฟังก์ชันดึงหมายเลขพินของรีเลย์
 int RelaySensor::getRelayPin(int relayNum) {
-    return (relayNum == 1) ? RELAY_1_PIN : RELAY_2_PIN;
+    return RELAY_2_PIN;  // มีเฉพาะรีเลย์ 2
 }
 
 // ฟังก์ชันดึงตัวแปรสถานะของรีเลย์
 bool* RelaySensor::getRelayStatePtr(int relayNum) {
-    return (relayNum == 1) ? &relay1State : &relay2State;
+    return &relay2State;  // มีเฉพาะรีเลย์ 2
 }
 
 // ฟังก์ชันอัพเดทข้อมูลจาก Serial
@@ -79,18 +77,16 @@ void RelaySensor::processCommand(String command) {
         String relayCmd = cmd.substring(strlen(CMD_RELAY));
         
         if (relayCmd == CMD_ON) {
-            // เปิดรีเลย์ทั้งหมด
-            toggleRelay(1, true);
+            // เปิดรีเลย์ 2
             toggleRelay(2, true);
-            Serial.println("Relay ON");
+            Serial.println("✅ Relay 2 ON");
             return;
         }
         
         if (relayCmd == CMD_OFF) {
-            // ปิดรีเลย์ทั้งหมด
-            toggleRelay(1, false);
+            // ปิดรีเลย์ 2
             toggleRelay(2, false);
-            Serial.println("Relay OFF");
+            Serial.println("✅ Relay 2 OFF");
             return;
         }
     }
@@ -101,6 +97,11 @@ void RelaySensor::processCommand(String command) {
 
 // ฟังก์ชันเปลี่ยนสถานะรีเลย์
 void RelaySensor::toggleRelay(int relayNum, bool turnOn) {
+    if (!isValidRelayNumber(relayNum)) {
+        Serial.println("❌ หมายเลขรีเลย์ไม่ถูกต้อง");
+        return;
+    }
+
     int pin = getRelayPin(relayNum);
     bool* state = getRelayStatePtr(relayNum);
     
@@ -112,8 +113,6 @@ void RelaySensor::toggleRelay(int relayNum, bool turnOn) {
 // ฟังก์ชันส่งสถานะรีเลย์
 void RelaySensor::sendStatus() {
     Serial.println("📊 สถานะรีเลย์:");
-    Serial.print("รีเลย์ 1: ");
-    Serial.println(relay1State ? "เปิด" : "ปิด");
     Serial.print("รีเลย์ 2: ");
     Serial.println(relay2State ? "เปิด" : "ปิด");
 }
@@ -123,5 +122,5 @@ bool RelaySensor::getRelayState(int relayNum) {
     if (!isValidRelayNumber(relayNum)) {
         return false;
     }
-    return (relayNum == 1) ? relay1State : relay2State;
+    return relay2State;
 } 

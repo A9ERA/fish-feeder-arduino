@@ -2,15 +2,13 @@
 
 #include <Arduino.h>
 
-// คลาสสำหรับควบคุมรีเลย์
+// คลาสสำหรับควบคุมรีเลย์ทั่วไป (ไม่รวม Blower)
 class RelaySensor {
 private:
     // กำหนดค่าพินสำหรับรีเลย์
-    const int RELAY_1_PIN = 50;
-    const int RELAY_2_PIN = 52;
+    const int RELAY_2_PIN = 52;  // รีเลย์ 2 สำหรับการใช้งานทั่วไป
     
     // สถานะของรีเลย์
-    bool relay1State = false;
     bool relay2State = false;
     
     // ค่าคงที่สำหรับคำสั่ง
