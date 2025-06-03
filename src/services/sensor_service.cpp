@@ -7,20 +7,16 @@
 #include "weight_sensor.h"
 #include "acs712_sensor.h"
 #include "voltage_sensor.h"
+#include "relay_sensor.h"
 #include "sensor_service.h"
 
 // Forward declaration of printJson function
 static void printJson(String jsonString);
 
-enum DeviceType {
-    DEVICE_UNKNOWN,
-    DEVICE_BLOWER,
-    DEVICE_ACTUATORMOTOR
-};
-
 DeviceType parseDeviceType(const String& device) {
     if (device == "blower") return DEVICE_BLOWER;
     if (device == "actuatormotor") return DEVICE_ACTUATORMOTOR;
+    if (device == "relay") return DEVICE_RELAY;
     return DEVICE_UNKNOWN;
 }
 
@@ -81,6 +77,10 @@ void controlSensor() {
                 } else if (rest == "stop") {
                     // actuatorMotorStop();
                 }
+                break;
+            case DEVICE_RELAY:
+                // Relay commands are handled by RelaySensor class
+                // This is just a placeholder to acknowledge relay commands
                 break;
             default:
                 // ไม่รู้จักอุปกรณ์
