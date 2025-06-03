@@ -5,8 +5,10 @@
 // คลาสสำหรับควบคุม Blower
 class BlowerSensor {
 private:
-    // กำหนดค่าพินสำหรับ Blower (ใช้รีเลย์ 1)
+    // กำหนดค่าพินสำหรับ Blower (ใช้รีเลย์ 1 และ PWM)
     const int BLOWER_PIN = 50;  // ใช้พินเดียวกับ RELAY_1_PIN
+    const int BLOWER_PWM_R = 5; // PWM ขวา
+    const int BLOWER_PWM_L = 6; // PWM ซ้าย
     
     // สถานะของ Blower
     bool blowerState = false;
@@ -29,6 +31,10 @@ private:
     
     // ฟังก์ชันส่งสถานะ Blower
     void sendStatus();
+    
+    // ฟังก์ชันควบคุม Blower แบบ PWM
+    void setBlowerSpeed(int speedR, int speedL); // speed 0-255
+    void stopBlower();
 
 public:
     // คอนสตรัคเตอร์

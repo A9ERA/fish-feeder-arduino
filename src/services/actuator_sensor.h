@@ -10,6 +10,11 @@ private:
     const int IN1_PIN = 12;  // ควบคุมทิศทาง
     const int IN2_PIN = 13;  // ควบคุมทิศทาง
     
+    // กำหนดค่าพินสำหรับ L298N (Feeder Motor)
+    const int FEEDER_ENA_PIN = 8;  // PWM ควบคุมความเร็ว Feeder
+    const int FEEDER_IN1_PIN = 9;  // ควบคุมทิศทาง Feeder
+    const int FEEDER_IN2_PIN = 10; // ควบคุมทิศทาง Feeder
+    
     // สถานะของ actuator
     bool isMoving = false;
     bool isExtending = false;  // true = ดันออก, false = ดึงกลับ
@@ -43,6 +48,11 @@ private:
     
     // ฟังก์ชันตรวจสอบไฟเลี้ยง
     bool checkPower();
+    
+    // ฟังก์ชันควบคุม Feeder Motor
+    void feederForward();
+    void feederBackward();
+    void feederStop();
 
 public:
     // คอนสตรัคเตอร์

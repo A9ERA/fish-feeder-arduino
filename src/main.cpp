@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "relay_sensor.h"
+#include "services/relay_sensor.h"
 #include "sensor_service.h"
 
 // Create relay sensor instance

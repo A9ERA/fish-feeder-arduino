@@ -4,24 +4,32 @@
 
 // ฟังก์ชันสร้างออบเจ็กต์ ActuatorSensor
 ActuatorSensor::ActuatorSensor() {
-    // ตั้งค่าเริ่มต้นพินสำหรับ L298N
+    // ตั้งค่าเริ่มต้นพินสำหรับ Actuator
     pinMode(ENA_PIN, OUTPUT);
     pinMode(IN1_PIN, OUTPUT);
     pinMode(IN2_PIN, OUTPUT);
-    
-    // ตั้งค่าเริ่มต้นให้หยุดนิ่ง
-    stop();
+    // ตั้งค่าเริ่มต้นพินสำหรับ Feeder Motor
+    pinMode(FEEDER_ENA_PIN, OUTPUT);
+    pinMode(FEEDER_IN1_PIN, OUTPUT);
+    pinMode(FEEDER_IN2_PIN, OUTPUT);
+    // ปิดมอเตอร์ทั้งหมด
+    analogWrite(ENA_PIN, 0);
+    digitalWrite(IN1_PIN, LOW);
+    digitalWrite(IN2_PIN, LOW);
+    analogWrite(FEEDER_ENA_PIN, 0);
+    digitalWrite(FEEDER_IN1_PIN, LOW);
+    digitalWrite(FEEDER_IN2_PIN, LOW);
 }
 
 // ฟังก์ชันเริ่มต้นการทำงานของ actuator
 void ActuatorSensor::begin() {
     // แสดงข้อความพร้อมใช้งาน
     Serial.println("📌 Actuator Control Ready");
-    Serial.println("คำสั่งที่รองรับ:");
-    Serial.println("[control]:actuator:extend  - ดัน actuator ออก");
-    Serial.println("[control]:actuator:retract - ดึง actuator กลับ");
-    Serial.println("[control]:actuator:stop    - หยุด actuator");
-    Serial.println("[control]:status           - แสดงสถานะ actuator");
+    Serial.println("Commands:");
+    Serial.println("  [control]:actuator:extend  - Extend");
+    Serial.println("  [control]:actuator:retract - Retract");
+    Serial.println("  [control]:actuator:stop    - Stop");
+    Serial.println("  [control]:status           - Status");
 }
 
 // ฟังก์ชันอัพเดทข้อมูลจาก Serial
@@ -34,7 +42,7 @@ void ActuatorSensor::update() {
     // ตรวจสอบไฟเลี้ยง
     if (!checkPower()) {
         stop();
-        Serial.println("ERROR:NO_POWER");
+        Serial.println("[ERROR] NO_POWER");
         return;
     }
     
@@ -58,7 +66,7 @@ void ActuatorSensor::update() {
 void ActuatorSensor::checkTimeout() {
     if (millis() - moveStartTime >= TIMEOUT_MS) {
         stop();
-        Serial.println("ERROR:TIMEOUT");
+        Serial.println("[ERROR] TIMEOUT");
     }
 }
 
@@ -75,7 +83,7 @@ void ActuatorSensor::processCommand(String command) {
     
     // ตรวจสอบรูปแบบคำสั่ง
     if (!command.startsWith(CMD_PREFIX)) {
-        Serial.println("ERROR:INVALID_COMMAND");
+        Serial.println("[ERROR] INVALID_COMMAND");
         return;
     }
     
@@ -94,31 +102,31 @@ void ActuatorSensor::processCommand(String command) {
         
         if (actuatorCmd == CMD_EXTEND) {
             extend();
-            Serial.println("OK:MOVING");
+            Serial.println("[OK] MOVING");
             return;
         }
         
         if (actuatorCmd == CMD_RETRACT) {
             retract();
-            Serial.println("OK:MOVING");
+            Serial.println("[OK] MOVING");
             return;
         }
         
         if (actuatorCmd == CMD_STOP) {
             stop();
-            Serial.println("OK:STOPPED");
+            Serial.println("[OK] STOPPED");
             return;
         }
     }
     
     // กรณีไม่รู้จักคำสั่ง
-    Serial.println("ERROR:INVALID_COMMAND");
+    Serial.println("[ERROR] INVALID_COMMAND");
 }
 
 // ฟังก์ชันดัน actuator ออก
 void ActuatorSensor::extend() {
     if (!checkPower()) {
-        Serial.println("ERROR:NO_POWER");
+        Serial.println("[ERROR] NO_POWER");
         return;
     }
     
@@ -133,7 +141,7 @@ void ActuatorSensor::extend() {
 // ฟังก์ชันดึง actuator กลับ
 void ActuatorSensor::retract() {
     if (!checkPower()) {
-        Serial.println("ERROR:NO_POWER");
+        Serial.println("[ERROR] NO_POWER");
         return;
     }
     
@@ -154,9 +162,10 @@ void ActuatorSensor::stop() {
 // ฟังก์ชันส่งสถานะ
 void ActuatorSensor::sendStatus() {
     if (!isMoving) {
-        Serial.println(isExtending ? "OK:EXTENDED" : "OK:RETRACTED");
+        Serial.print("[STATUS] ");
+        Serial.println(isExtending ? "EXTENDED" : "RETRACTED");
     } else {
-        Serial.println("OK:MOVING");
+        Serial.println("[STATUS] MOVING");
     }
 }
 
@@ -175,4 +184,21 @@ String ActuatorSensor::getStatusJson() {
     String jsonString;
     serializeJson(doc, jsonString);
     return jsonString;
+}
+
+// ฟังก์ชันควบคุม Feeder Motor
+void ActuatorSensor::feederForward() {
+    digitalWrite(FEEDER_IN1_PIN, HIGH);
+    digitalWrite(FEEDER_IN2_PIN, LOW);
+    analogWrite(FEEDER_ENA_PIN, 255);
+}
+void ActuatorSensor::feederBackward() {
+    digitalWrite(FEEDER_IN1_PIN, LOW);
+    digitalWrite(FEEDER_IN2_PIN, HIGH);
+    analogWrite(FEEDER_ENA_PIN, 255);
+}
+void ActuatorSensor::feederStop() {
+    analogWrite(FEEDER_ENA_PIN, 0);
+    digitalWrite(FEEDER_IN1_PIN, LOW);
+    digitalWrite(FEEDER_IN2_PIN, LOW);
 } 

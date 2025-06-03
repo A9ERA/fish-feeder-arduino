@@ -5,9 +5,13 @@
 BlowerSensor::BlowerSensor() {
     // ตั้งค่าเริ่มต้นพินสำหรับ Blower
     pinMode(BLOWER_PIN, OUTPUT);
+    pinMode(BLOWER_PWM_R, OUTPUT);
+    pinMode(BLOWER_PWM_L, OUTPUT);
     
     // ตั้งค่า Blower ให้อยู่ในสถานะ OFF (HIGH = OFF สำหรับโมดูลรีเลย์ส่วนใหญ่)
     digitalWrite(BLOWER_PIN, HIGH);
+    analogWrite(BLOWER_PWM_R, 0);
+    analogWrite(BLOWER_PWM_L, 0);
 }
 
 // ฟังก์ชันเริ่มต้นการทำงานของ Blower
@@ -95,4 +99,17 @@ void BlowerSensor::sendStatus() {
 // ฟังก์ชันดึงสถานะของ Blower
 bool BlowerSensor::getState() {
     return blowerState;
+}
+
+// ฟังก์ชันควบคุม Blower แบบ PWM
+void BlowerSensor::setBlowerSpeed(int speedR, int speedL) {
+    analogWrite(BLOWER_PWM_R, constrain(speedR, 0, 255));
+    analogWrite(BLOWER_PWM_L, constrain(speedL, 0, 255));
+    blowerState = (speedR > 0 || speedL > 0);
+}
+
+void BlowerSensor::stopBlower() {
+    analogWrite(BLOWER_PWM_R, 0);
+    analogWrite(BLOWER_PWM_L, 0);
+    blowerState = false;
 } 

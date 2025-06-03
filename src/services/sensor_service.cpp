@@ -7,7 +7,7 @@
 #include "weight_sensor.h"
 #include "acs712_sensor.h"
 #include "voltage_sensor.h"
-#include "relay_sensor.h"
+#include "services/relay_sensor.h"
 #include "sensor_service.h"
 
 // Forward declaration of printJson function
