@@ -2,18 +2,26 @@
 #define ACS712_SENSOR_H
 
 #include <Arduino.h>
-#include <ArduinoJson.h>
+#include "sensor_data.h"
 
-// Pin definitions
-#define ACS712_PIN A2
+class ACS712Sensor {
+private:
+    uint8_t pin;
+    float sensitivity; // mV/A
+    float offset;      // Voltage offset at 0A
 
-// Sensor name
-#define ACS712_SENSOR "CURRENT_SYSTEM"
+public:
+    ACS712Sensor(uint8_t pin, float sensitivity = 185.0); // 5A module default
+    
+    void begin();
+    bool readCurrent(float& current);
+    float convertToCurrent(int rawValue);
+    void calibrateOffset();
+    bool isValidReading(float value);
+    void printStatus();
+};
 
-// Function declarations
-void initACS712();
-StaticJsonDocument<256> readACS712();
-double readCurrentOnce();
-double readAverageCurrent();
+// ===== 🎛️ GLOBAL ACS712 SENSOR INSTANCE =====
+extern ACS712Sensor currentSensor;
 
-#endif 
+#endif // ACS712_SENSOR_H 

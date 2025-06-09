@@ -1,16 +1,28 @@
 #ifndef BLOWER_H
 #define BLOWER_H
 
-#include "Arduino.h"
-// กำหนดขา PWM สำหรับควบคุมทิศทางของ Blower
-#define RPWM 5 // ขา PWM สำหรับหมุนปกติ
-#define LPWM 6 // ขา PWM สำหรับหมุนย้อนกลับ
+#include <Arduino.h>
+#include "sensor_data.h"
 
-void initBlower();
-void startBlower();
-void stopBlower();
-void setBlowerSpeed(int speed);
-void setBlowerDirection(bool reverse);
-void updateBlower();
+class Blower {
+private:
+    uint8_t pin;
+    uint8_t speed;
+    bool isRunning;
 
-#endif
+public:
+    Blower(uint8_t pin);
+    
+    void begin();
+    void turnOn(uint8_t speed = 255);
+    void turnOff();
+    void setSpeed(uint8_t speed);
+    uint8_t getSpeed() const { return speed; }
+    bool getStatus() const { return isRunning; }
+    void printStatus();
+};
+
+// ===== 🎛️ GLOBAL BLOWER INSTANCE =====
+extern Blower blower;
+
+#endif // BLOWER_H 

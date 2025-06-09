@@ -2,16 +2,23 @@
 #define SOIL_SENSOR_H
 
 #include <Arduino.h>
-#include <ArduinoJson.h>
+#include "sensor_data.h"
 
-// Pin definitions
-#define SOIL_PIN A0
+class SoilSensor {
+private:
+    uint8_t pin;
 
-// Sensor name
-#define SOIL_SENSOR "SOIL_MOISTURE"
+public:
+    SoilSensor(uint8_t pin);
+    
+    void begin();
+    bool readMoisture(float& moisture);
+    float convertToPercentage(int rawValue);
+    bool isValidReading(float value);
+    void printStatus();
+};
 
-// Function declarations
-void initSoil();
-StaticJsonDocument<256> readSoil();
+// ===== 🎛️ GLOBAL SOIL SENSOR INSTANCE =====
+extern SoilSensor soilSensor;
 
-#endif // SOIL_SENSOR_H
+#endif // SOIL_SENSOR_H 

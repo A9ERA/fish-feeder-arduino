@@ -1,60 +1,55 @@
-#include "../../../include/blower.h"
+#include "blower.h"
 
-// กำหนดความเร็วเริ่มต้นของ Blower (0-255)
-int currentSpeed = 170;
-// สถานะการทำงานของ Blower (true = ทำงาน, false = หยุด)
-bool isRunning = false;
-// กำหนดทิศทางการหมุนของ Blower (true = หมุนย้อนกลับ, false = หมุนปกติ)
-bool isReverse = false;
-
-// ฟังก์ชันเริ่มต้น กำหนดโหมดขา PWM สำหรับควบคุม Blower
-void initBlower() {
-  pinMode(RPWM, OUTPUT);
-  pinMode(LPWM, OUTPUT);
+Blower::Blower(uint8_t pin) : pin(pin), speed(0), isRunning(false) {
 }
 
-// ฟังก์ชันเริ่มการทำงานของ Blower
-void startBlower() {
-  isRunning = true;
-  updateBlower();
+void Blower::begin() {
+    pinMode(pin, OUTPUT);
+    turnOff();
+    Serial.println("💨 Blower motor initialized");
 }
 
-// ฟังก์ชันหยุดการทำงานของ Blower
-void stopBlower() {
-  isRunning = false;
-  updateBlower();
+void Blower::turnOn(uint8_t newSpeed) {
+    speed = newSpeed;
+    analogWrite(pin, speed);
+    isRunning = true;
+    
+    Serial.print("✅ Blower ON - Speed: ");
+    Serial.print(speed * 100 / 255);
+    Serial.println("%");
 }
 
-// ฟังก์ชันตั้งค่าความเร็วของ Blower (0-255)
-void setBlowerSpeed(int speed) {
-  if (speed < 0) speed = 0;
-  if (speed > 255) speed = 255;
-  currentSpeed = speed;
-  updateBlower();
+void Blower::turnOff() {
+    speed = 0;
+    analogWrite(pin, 0);
+    isRunning = false;
+    Serial.println("✅ Blower OFF");
 }
 
-// ฟังก์ชันตั้งค่าทิศทางการหมุนของ Blower
-void setBlowerDirection(bool reverse) {
-  isReverse = reverse;
-  updateBlower();
-}
-
-// ฟังก์ชันอัปเดตสถานะของ Blower ตามค่าปัจจุบัน
-void updateBlower() {
-  Serial.println("updateBlower");
-  Serial.println(isRunning);
-  Serial.println(isReverse);
-  Serial.println(currentSpeed);
-  if (isRunning) {
-    if (isReverse) {
-      analogWrite(LPWM, currentSpeed); // หมุนย้อนกลับ
-      analogWrite(RPWM, 0);
+void Blower::setSpeed(uint8_t newSpeed) {
+    if (newSpeed == 0) {
+        turnOff();
     } else {
-      analogWrite(RPWM, currentSpeed); // หมุนปกติ
-      analogWrite(LPWM, 0);
+        speed = newSpeed;
+        analogWrite(pin, speed);
+        isRunning = true;
+        
+        Serial.print("⚙️ Blower speed: ");
+        Serial.print(speed * 100 / 255);
+        Serial.println("%");
     }
-  } else {
-    analogWrite(RPWM, 0); // หยุดการทำงาน
-    analogWrite(LPWM, 0);
-  }
 }
+
+void Blower::printStatus() {
+    Serial.print("💨 Blower: ");
+    if (isRunning) {
+        Serial.print("ON (");
+        Serial.print(speed * 100 / 255);
+        Serial.println("%)");
+    } else {
+        Serial.println("OFF");
+    }
+}
+
+// ===== 🎛️ GLOBAL INSTANCE =====
+Blower blower(BLOWER_PIN); 

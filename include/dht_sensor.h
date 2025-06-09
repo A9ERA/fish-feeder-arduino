@@ -3,20 +3,28 @@
 
 #include <Arduino.h>
 #include <DHT.h>
-#include <ArduinoJson.h>
+#include "sensor_data.h"
 
-// Pin definitions
-#define DHTPIN1 48  // System DHT22
-#define DHTPIN2 46  // Feeder DHT22
-#define DHTTYPE DHT22
+class DHTSensor {
+private:
+    DHT* dht;
+    uint8_t pin;
+    String name;
 
-// Sensor names
-#define DHT22_SYSTEM "DHT22_SYSTEM"
-#define DHT22_FEEDER "DHT22_FEEDER"
+public:
+    DHTSensor(uint8_t pin, String name);
+    ~DHTSensor();
+    
+    void begin();
+    bool readTemperature(float& temperature);
+    bool readHumidity(float& humidity);
+    bool readBoth(float& temperature, float& humidity);
+    bool isValidReading(float value);
+    void printStatus();
+};
 
-// Function declarations
-void initDHT();
-StaticJsonDocument<256> readDHTSystem();
-StaticJsonDocument<256> readDHTFeeder();
+// ===== 🎛️ GLOBAL DHT INSTANCES =====
+extern DHTSensor dhtFeed;
+extern DHTSensor dhtControl;
 
 #endif // DHT_SENSOR_H 

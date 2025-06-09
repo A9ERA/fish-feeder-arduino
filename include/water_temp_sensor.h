@@ -4,14 +4,25 @@
 #include <Arduino.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#include <ArduinoJson.h>
+#include "sensor_data.h"
 
-#define ONE_WIRE_BUS 44  // ขาที่ใช้กับ DS18B20
+class WaterTempSensor {
+private:
+    OneWire* oneWire;
+    DallasTemperature* sensors;
+    uint8_t pin;
 
-// Sensor name
-#define WATER_TEMP_SENSOR "DS18B20_WATER_TEMP"
+public:
+    WaterTempSensor(uint8_t pin);
+    ~WaterTempSensor();
+    
+    void begin();
+    bool readTemperature(float& temperature);
+    bool isValidReading(float value);
+    void printStatus();
+};
 
-void initWaterTemp();
-StaticJsonDocument<256> readWaterTemp();
+// ===== 🎛️ GLOBAL WATER TEMP INSTANCE =====
+extern WaterTempSensor waterTempSensor;
 
-#endif
+#endif // WATER_TEMP_SENSOR_H 

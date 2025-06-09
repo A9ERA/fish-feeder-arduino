@@ -1,86 +1,60 @@
-#include "../../../include/dht_sensor.h"
+#include "dht_sensor.h"
 
-// Create DHT sensor objects
-DHT dht1(DHTPIN1, DHTTYPE);  // System DHT22
-DHT dht2(DHTPIN2, DHTTYPE);  // Feeder DHT22
-
-
-void initDHT() {
-  dht1.begin();
-  dht2.begin();
-  Serial.println("📡 เริ่มอ่านค่า DHT22 ที่ขา 48 และ 46...");
+DHTSensor::DHTSensor(uint8_t pin, String name) : pin(pin), name(name) {
+    dht = new DHT(pin, DHT22);
 }
 
-StaticJsonDocument<256> readDHTSystem() {
-  StaticJsonDocument<256> doc;
-  doc["name"] = DHT22_SYSTEM;
-  JsonArray values = doc.createNestedArray("value");
-
-  float temp = dht1.readTemperature();
-  float hum = dht1.readHumidity();
-
-  Serial.print("📍 DHT1 (ขา 48) - 🌡️ Temp: ");
-  if (isnan(temp)) {
-    Serial.print("NaN");
-    temp = 0;
-  } else {
-    Serial.print(temp);
-  }
-  Serial.print(" °C\t💧 Humidity: ");
-  if (isnan(hum)) {
-    Serial.print("NaN");
-    hum = 0;
-  } else {
-    Serial.print(hum);
-  }
-  Serial.println(" %");
-
-  JsonObject tempValue = values.createNestedObject();
-  tempValue["type"] = "temperature";
-  tempValue["unit"] = "C";
-  tempValue["value"] = temp;
-
-  JsonObject humValue = values.createNestedObject();
-  humValue["type"] = "humidity";
-  humValue["unit"] = "%";
-  humValue["value"] = hum;
-
-  return doc;
+DHTSensor::~DHTSensor() {
+    delete dht;
 }
 
-StaticJsonDocument<256> readDHTFeeder() {
-  StaticJsonDocument<256> doc;
-  doc["name"] = DHT22_FEEDER;
-  JsonArray values = doc.createNestedArray("value");
-
-  float temp = dht2.readTemperature();
-  float hum = dht2.readHumidity();
-
-  Serial.print("📍 DHT2 (ขา 46) - 🌡️ Temp: ");
-  if (isnan(temp)) {
-    Serial.print("NaN");
-    temp = 0;
-  } else {
-    Serial.print(temp);
-  }
-  Serial.print(" °C\t💧 Humidity: ");
-  if (isnan(hum)) {
-    Serial.print("NaN");
-    hum = 0;
-  } else {
-    Serial.print(hum);
-  }
-  Serial.println(" %");
-
-  JsonObject tempValue = values.createNestedObject();
-  tempValue["type"] = "temperature";
-  tempValue["unit"] = "C";
-  tempValue["value"] = temp;
-
-  JsonObject humValue = values.createNestedObject();
-  humValue["type"] = "humidity";
-  humValue["unit"] = "%";
-  humValue["value"] = hum;
-
-  return doc;
+void DHTSensor::begin() {
+    dht->begin();
+    delay(100);
+    Serial.print("🌡️ ");
+    Serial.print(name);
+    Serial.println(" DHT22 initialized");
 }
+
+bool DHTSensor::readTemperature(float& temperature) {
+    temperature = dht->readTemperature();
+    return isValidReading(temperature);
+}
+
+bool DHTSensor::readHumidity(float& humidity) {
+    humidity = dht->readHumidity();
+    return isValidReading(humidity);
+}
+
+bool DHTSensor::readBoth(float& temperature, float& humidity) {
+    temperature = dht->readTemperature();
+    humidity = dht->readHumidity();
+    
+    bool tempValid = isValidReading(temperature);
+    bool humidValid = isValidReading(humidity);
+    
+    return tempValid && humidValid;
+}
+
+bool DHTSensor::isValidReading(float value) {
+    return !isnan(value) && value != 0.0;
+}
+
+void DHTSensor::printStatus() {
+    float temp, humid;
+    bool valid = readBoth(temp, humid);
+    
+    Serial.print("🌡️ ");
+    Serial.print(name);
+    Serial.print(" - Temp: ");
+    Serial.print(valid ? temp : -999);
+    Serial.print("°C, Humidity: ");
+    Serial.print(valid ? humid : -999);
+    Serial.print("% [");
+    Serial.print(valid ? "OK" : "ERROR");
+    Serial.println("]");
+}
+
+// ===== 🎛️ GLOBAL INSTANCES =====
+DHTSensor dhtFeed(DHT_FEED_PIN, "Feed Tank");
+DHTSensor dhtControl(DHT_CONTROL_PIN, "Control Box"); 

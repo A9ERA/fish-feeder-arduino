@@ -1,27 +1,41 @@
-#include "../../../include/voltage_sensor.h"
+#include "voltage_sensor.h"
 
-const float correctionFactor = 11.98 / 12.95;  // ประมาณ 0.925
-
-void initVoltageSensor() {
-  Serial.println("🔍 เริ่มวัดแรงดันไฟฟ้า...");
+VoltageSensor::VoltageSensor(uint8_t pin, float multiplier) 
+    : pin(pin), voltageMultiplier(multiplier) {
 }
 
-StaticJsonDocument<256> readVoltageSensor() {
-  StaticJsonDocument<256> doc;
-  doc["name"] = VOLTAGE_SENSOR;
-  JsonArray values = doc.createNestedArray("value");
-
-  int raw = analogRead(VOLTAGE_PIN);
-  float voltage = (raw / 1023.0) * 5.0 * 5.0 * correctionFactor;
-
-  Serial.print("📟 Voltage: ");
-  Serial.print(voltage, 2);
-  Serial.println(" V");
-
-  JsonObject voltageValue = values.createNestedObject();
-  voltageValue["type"] = "voltage";
-  voltageValue["unit"] = "V";
-  voltageValue["value"] = voltage;
-
-  return doc;
+void VoltageSensor::begin() {
+    pinMode(pin, INPUT);
+    delay(50);
+    Serial.println("🔋 Battery voltage sensor initialized");
 }
+
+bool VoltageSensor::readVoltage(float& voltage) {
+    int rawValue = analogRead(pin);
+    voltage = convertToVoltage(rawValue);
+    return isValidReading(voltage);
+}
+
+float VoltageSensor::convertToVoltage(int rawValue) {
+    // Convert 0-1023 to 0-5V, then apply multiplier for voltage divider
+    float voltage = (rawValue * 5.0 / 1023.0) * voltageMultiplier;
+    return voltage;
+}
+
+bool VoltageSensor::isValidReading(float value) {
+    return value >= 0.0 && value <= 25.0; // Reasonable range for battery systems
+}
+
+void VoltageSensor::printStatus() {
+    float voltage;
+    bool valid = readVoltage(voltage);
+    
+    Serial.print("🔋 Battery Voltage: ");
+    Serial.print(valid ? voltage : -999);
+    Serial.print("V [");
+    Serial.print(valid ? "OK" : "ERROR");
+    Serial.println("]");
+}
+
+// ===== 🎛️ GLOBAL INSTANCE =====
+VoltageSensor voltageSensor(VOLTAGE_PIN, 3.0); // Assuming 3:1 voltage divider 

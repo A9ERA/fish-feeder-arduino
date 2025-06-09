@@ -2,16 +2,24 @@
 #define VOLTAGE_SENSOR_H
 
 #include <Arduino.h>
-#include <ArduinoJson.h>
+#include "sensor_data.h"
 
-// Pin definitions
-#define VOLTAGE_PIN A1
+class VoltageSensor {
+private:
+    uint8_t pin;
+    float voltageMultiplier;
 
-// Sensor name
-#define VOLTAGE_SENSOR "VOLTAGE_SYSTEM"
+public:
+    VoltageSensor(uint8_t pin, float multiplier = 1.0);
+    
+    void begin();
+    bool readVoltage(float& voltage);
+    float convertToVoltage(int rawValue);
+    bool isValidReading(float value);
+    void printStatus();
+};
 
-// Function declarations
-void initVoltageSensor();
-StaticJsonDocument<256> readVoltageSensor();
+// ===== 🎛️ GLOBAL VOLTAGE SENSOR INSTANCE =====
+extern VoltageSensor voltageSensor;
 
-#endif 
+#endif // VOLTAGE_SENSOR_H 

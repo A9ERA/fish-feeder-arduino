@@ -1,37 +1,36 @@
+🐟 Fish Feeder Arduino - Include Directory
+=========================================
 
-This directory is intended for project header files.
+This directory contains all header files for the modular Fish Feeder system.
 
-A header file is a file containing C declarations and macro definitions
-to be shared between several project source files. You request the use of a
-header file in your project source file (C, C++, etc) located in `src` folder
-by including it, with the C preprocessing directive `#include'.
+📁 Structure:
+├── sensor_data.h        - Global data structures and pin definitions
+├── sensor_service.h     - Master sensor management service
+├── dht_sensor.h         - DHT22 temperature/humidity sensors
+├── water_temp_sensor.h  - DS18B20 water temperature sensor
+├── weight_sensor.h      - HX711 load cell with calibration
+├── soil_sensor.h        - Analog soil moisture sensor
+├── voltage_sensor.h     - Battery voltage monitoring
+├── acs712_sensor.h      - ACS712 solar current sensor
+└── blower.h            - Blower motor control
 
-```src/main.c
+🎯 Design Philosophy:
+- Clean separation of concerns
+- Each sensor has its own class with standard interface
+- Global instances for easy access
+- Error checking and validation
+- Emoji-based status output
 
-#include "header.h"
+🔧 Usage:
+Include the main service headers in your main.cpp:
+#include "sensor_data.h"
+#include "sensor_service.h"
 
-int main (void)
-{
- ...
-}
-```
+Then initialize with:
+sensorService.begin();
 
-Including a header file produces the same results as copying the header file
-into each source file that needs it. Such copying would be time-consuming
-and error-prone. With a header file, the related declarations appear
-in only one place. If they need to be changed, they can be changed in one
-place, and programs that include the header file will automatically use the
-new version when next recompiled. The header file eliminates the labor of
-finding and changing all the copies as well as the risk that a failure to
-find one copy will result in inconsistencies within a program.
-
-In C, the convention is to give header files names that end with `.h'.
-
-Read more about using header files in official GCC documentation:
-
-* Include Syntax
-* Include Operation
-* Once-Only Headers
-* Computed Includes
-
-https://gcc.gnu.org/onlinedocs/cpp/Header-Files.html
+📚 Dependencies:
+- DHT sensor library
+- OneWire library  
+- DallasTemperature library
+- HX711 library 

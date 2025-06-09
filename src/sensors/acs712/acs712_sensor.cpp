@@ -1,42 +1,62 @@
-#include "../../../include/acs712_sensor.h"
+#include "acs712_sensor.h"
 
-const int sensitivity = 66;     // mV per A
-const int voltageOffset = 2490; // ปรับชดเชยใหม่
-
-void initACS712() {
-  Serial.println("⚡ เริ่มวัดกระแสไฟฟ้า...");
+ACS712Sensor::ACS712Sensor(uint8_t pin, float sensitivity) 
+    : pin(pin), sensitivity(sensitivity), offset(2.5) {
 }
 
-double readAverageCurrent() {
-  const int sampleCount = 200;
-  double sum = 0;
-  for (int i = 0; i < sampleCount; i++) {
-    sum += readCurrentOnce();
-  }
-  return sum / sampleCount;
+void ACS712Sensor::begin() {
+    pinMode(pin, INPUT);
+    calibrateOffset();
+    delay(50);
+    Serial.println("☀️ ACS712 solar current sensor initialized");
 }
 
-double readCurrentOnce() {
-  int raw = analogRead(A0);
-  double voltage_mV = (raw / 1024.0) * 5000.0;
-  return (voltage_mV - voltageOffset) / sensitivity;
+bool ACS712Sensor::readCurrent(float& current) {
+    int rawValue = analogRead(pin);
+    current = convertToCurrent(rawValue);
+    return isValidReading(current);
 }
 
-StaticJsonDocument<256> readACS712() {
-  StaticJsonDocument<256> doc;
-  doc["name"] = ACS712_SENSOR;
-  JsonArray values = doc.createNestedArray("value");
-
-  double current = readAverageCurrent();
-
-  Serial.print("⚡ Current: ");
-  Serial.print(current, 3);
-  Serial.println(" A");
-
-  JsonObject currentValue = values.createNestedObject();
-  currentValue["type"] = "current";
-  currentValue["unit"] = "A";
-  currentValue["value"] = current;
-
-  return doc;
+float ACS712Sensor::convertToCurrent(int rawValue) {
+    // Convert ADC reading to voltage
+    float voltage = (rawValue * 5.0) / 1023.0;
+    
+    // Calculate current based on ACS712 specifications
+    // Current = (Voltage - Offset) / (Sensitivity/1000)
+    float current = (voltage - offset) / (sensitivity / 1000.0);
+    
+    return abs(current); // Return absolute value
 }
+
+void ACS712Sensor::calibrateOffset() {
+    long sum = 0;
+    for (int i = 0; i < 100; i++) {
+        sum += analogRead(pin);
+        delay(10);
+    }
+    
+    // Calculate average voltage when no current flows
+    offset = (sum / 100.0) * 5.0 / 1023.0;
+    
+    Serial.print("🎯 ACS712 offset calibrated: ");
+    Serial.print(offset);
+    Serial.println("V");
+}
+
+bool ACS712Sensor::isValidReading(float value) {
+    return value >= 0.0 && value <= 30.0; // Reasonable range for solar current
+}
+
+void ACS712Sensor::printStatus() {
+    float current;
+    bool valid = readCurrent(current);
+    
+    Serial.print("☀️ Solar Current: ");
+    Serial.print(valid ? current : -999);
+    Serial.print("A [");
+    Serial.print(valid ? "OK" : "ERROR");
+    Serial.println("]");
+}
+
+// ===== 🎛️ GLOBAL INSTANCE =====
+ACS712Sensor currentSensor(CURRENT_PIN, 185.0); // 5A module 
