@@ -1,4 +1,4 @@
-// === Fish Feeder Arduino System - Based on PASSIEE02 ===
+// === Fish Feeder Arduino System - Production Version ===
 #include <Arduino.h>
 #include <DHT.h>
 #include <HX711.h>
@@ -6,6 +6,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <ArduinoJson.h>
+#include <avr/wdt.h>  // Watchdog timer for production stability
 
 // === พินเซ็นเซอร์และควบคุม ===
 #define DHTPIN_BOX 48     // DHT22 ตู้ควบคุม
@@ -37,6 +38,16 @@
 // === EEPROM Address ===
 #define EEPROM_SCALE_ADDR 0
 #define EEPROM_OFFSET_ADDR (EEPROM_SCALE_ADDR + sizeof(float))
+#define EEPROM_FEED_COUNT_ADDR (EEPROM_OFFSET_ADDR + sizeof(long))
+
+// === Production Configuration ===
+#define PRODUCTION_MODE true
+#define ENABLE_WATCHDOG true
+#define SENSOR_INTERVAL 10000    // 10 seconds for production
+#define HEARTBEAT_INTERVAL 30000 // 30 seconds
+#define SENSOR_TIMEOUT 5000      // 5 second timeout for sensor readings
+#define MAX_RETRY_COUNT 3        // Maximum retry attempts
+#define SAFETY_TIMEOUT 300000    // 5 minutes safety timeout for operations
 
 // === เซ็นเซอร์ประกาศ ===
 DHT dhtBox(DHTPIN_BOX, DHTTYPE);
@@ -48,6 +59,7 @@ DallasTemperature waterTemp(&oneWire);
 // === ตัวแปรหน่วยน้ำหนัก ===
 float scaleFactor = 1.0;
 long offset = 0;
+uint16_t feedCount = 0;
 
 // === ตัวแปรระบบควบคุม ===
 int blowerSpeed = 250;
@@ -56,6 +68,14 @@ bool isActuatorRunning = false;
 bool isAugerRunning = false;
 bool relay1State = false;
 bool relay2State = false;
+bool systemError = false;
+String lastError = "";
+
+// === ตัวแปร Safety & Timing ===
+unsigned long blowerStartTime = 0;
+unsigned long actuatorStartTime = 0;
+unsigned long augerStartTime = 0;
+unsigned long systemStartTime = 0;
 
 // === ตัวแปร Power Monitor ===
 const float vRef = 5.0;
@@ -65,13 +85,12 @@ const float zeroCurrentVoltage = 2.500;
 
 // === ตัวแปรระบบ ===
 int printCount = 1;
-bool showSensorData = true;
-bool showReadableDisplay = true;  // แสดงผลแบบอ่านง่าย
+bool showSensorData = PRODUCTION_MODE ? false : true; // ใน Production ไม่แสดง debug
+bool showReadableDisplay = PRODUCTION_MODE ? false : true;
 char currentMenu = 'M';
 unsigned long lastSensorRead = 0;
 unsigned long lastHeartbeat = 0;
-const unsigned long SENSOR_INTERVAL = 5000;   // 5 seconds
-const unsigned long HEARTBEAT_INTERVAL = 30000; // 30 seconds
+unsigned long lastWatchdogReset = 0;
 
 // === Function Declarations ===
 int freeMemory();
@@ -79,6 +98,90 @@ void showSimpleMenu();
 void handleSimpleCommand(char cmd);
 void testAllSensors();
 void testPowerSensors();
+void emergencyShutdown();
+void resetWatchdog();
+bool checkSensorHealth();
+void logSystemEvent(String event);
+
+// === ฟังก์ชัน Emergency Shutdown ===
+void emergencyShutdown() {
+  Serial.println("[EMERGENCY] System shutdown initiated!");
+  
+  // หยุดทุกการทำงาน
+  digitalWrite(RPWM, LOW);
+  digitalWrite(LPWM, LOW);
+  digitalWrite(ACT_ENA, LOW);
+  digitalWrite(AUG_ENA, LOW);
+  digitalWrite(RELAY_IN1, HIGH);
+  digitalWrite(RELAY_IN2, HIGH);
+  
+  // Reset states
+  isBlowerRunning = false;
+  isActuatorRunning = false;
+  isAugerRunning = false;
+  relay1State = false;
+  relay2State = false;
+  
+  systemError = true;
+  lastError = "Emergency shutdown activated";
+  
+  Serial.println("[EMERGENCY] All systems stopped");
+}
+
+// === ฟังก์ชัน Watchdog Reset ===
+void resetWatchdog() {
+  if (ENABLE_WATCHDOG && millis() - lastWatchdogReset > 1000) {
+    wdt_reset();
+    lastWatchdogReset = millis();
+  }
+}
+
+// === ตรวจสอบสุขภาพเซ็นเซอร์ ===
+bool checkSensorHealth() {
+  bool healthy = true;
+  
+  // ตรวจ DHT sensors
+  float temp1 = dhtBox.readTemperature();
+  float hum1 = dhtBox.readHumidity();
+  if (isnan(temp1) || isnan(hum1)) {
+    lastError = "DHT Box sensor error";
+    healthy = false;
+  }
+  
+  float temp2 = dhtFeed.readTemperature();
+  float hum2 = dhtFeed.readHumidity();
+  if (isnan(temp2) || isnan(hum2)) {
+    lastError = "DHT Feed sensor error";
+    healthy = false;
+  }
+  
+  // ตรวจ Water temperature
+  waterTemp.requestTemperatures();
+  float waterTempC = waterTemp.getTempCByIndex(0);
+  if (waterTempC == -127.00) {
+    lastError = "Water temperature sensor error";
+    healthy = false;
+  }
+  
+  return healthy;
+}
+
+// === บันทึกเหตุการณ์ระบบ ===
+void logSystemEvent(String event) {
+  if (PRODUCTION_MODE) {
+    StaticJsonDocument<256> doc;
+    doc["timestamp"] = millis();
+    doc["event"] = event;
+    doc["uptime"] = millis() - systemStartTime;
+    doc["free_memory"] = freeMemory();
+    
+    Serial.print("[LOG] ");
+    serializeJson(doc, Serial);
+    Serial.println();
+  } else {
+    Serial.println("📝 " + event);
+  }
+}
 
 // === ฟังก์ชันประเมินเปอร์เซ็นต์แบตเตอรี่ ===
 float estimateBatteryPercentage(float voltage) {
@@ -89,9 +192,9 @@ float estimateBatteryPercentage(float voltage) {
   return ((voltage - minV) / (maxV - minV)) * 100.0;
 }
 
-// === อ่านค่าเซ็นเซอร์พลังงาน ===
+// === อ่านค่าเซ็นเซอร์พลังงานแบบ Production ===
 void readPowerSensors(float& solarV, float& solarI, float& loadV, float& loadI) {
-  const int sampleCount = 50; // ลดจำนวน sample เพื่อประสิทธิภาพ
+  const int sampleCount = PRODUCTION_MODE ? 30 : 50; // ลด sample ใน production
   long sumVS = 0, sumIS = 0;
   long sumVL = 0, sumIL = 0;
 
@@ -101,6 +204,7 @@ void readPowerSensors(float& solarV, float& solarI, float& loadV, float& loadI) 
     sumVL += analogRead(LOAD_VOLTAGE_PIN);
     sumIL += analogRead(LOAD_CURRENT_PIN);
     delay(1);
+    resetWatchdog(); // Reset watchdog during sampling
   }
 
   solarV = (sumVS / (float)sampleCount / 1023.0) * vRef * vFactor;
@@ -108,14 +212,15 @@ void readPowerSensors(float& solarV, float& solarI, float& loadV, float& loadI) 
   solarI = (((sumIS / (float)sampleCount) / 1023.0) * vRef - zeroCurrentVoltage) / sensitivity;
   loadI  = (((sumIL / (float)sampleCount) / 1023.0) * vRef - zeroCurrentVoltage) / sensitivity;
 
+  // Filter noise
   if (solarV < 1.0) solarV = 0.0;
   if (abs(solarI) < 0.2) solarI = 0.0;
   if (loadI < 0.0) loadI = -loadI;
 }
 
-// === แสดงข้อมูลเซ็นเซอร์แบบเป็นระเบียบ (สไตล์ต้นฉบับ PASSIEE02) ===
+// === แสดงข้อมูลเซ็นเซอร์แบบ Production (เฉพาะ debug mode) ===
 void displaySensorReadout() {
-  if (!showSensorData || !showReadableDisplay) return;
+  if (!showSensorData || !showReadableDisplay || PRODUCTION_MODE) return;
 
   static int displayCount = 1;
   
@@ -153,7 +258,7 @@ void displaySensorReadout() {
   }
   
   // Weight
-  float weight = scale.get_units(5);
+  float weight = scale.get_units(3); // ลด sample ใน production
   Serial.print("⚖️ Feed Weight  : "); Serial.print(weight, 3); Serial.println(" kg");
   
   Serial.println();
@@ -198,22 +303,11 @@ void displaySensorReadout() {
   Serial.print("🔌 Relay 1      : "); Serial.println(relay1State ? "🟢 ON" : "🔴 OFF");
   Serial.print("🔌 Relay 2      : "); Serial.println(relay2State ? "🟢 ON" : "🔴 OFF");
   
-  Serial.println();
-  
-  // === Command Instructions ===
-  Serial.println("📘 AVAILABLE COMMANDS");
-  Serial.println(String('-').substring(0, 40));
-  Serial.println("💡 [control]:system:sensors:toggle   - Toggle sensor display");
-  Serial.println("📺 [control]:system:display:toggle   - Toggle readable display");
-  Serial.println("🌀 [control]:blower:start/stop       - Control blower");
-  Serial.println("🦾 [control]:actuator:up/down/stop   - Control actuator");
-  Serial.println("⚙️ [control]:auger:forward/reverse/stop - Control auger");
-  Serial.println("🔌 [control]:relay:1:on/off          - Control relay 1");
-  Serial.println("🔌 [control]:relay:2:on/off          - Control relay 2");
-  Serial.println("⚖️ [control]:system:calibrate        - Calibrate load cell");
+  if (systemError) {
+    Serial.println("❌ SYSTEM ERROR: " + lastError);
+  }
   
   Serial.println(String('=').substring(0, 80));
-  Serial.println();
 }
 
 // === ฟังก์ชันดู Memory ===
@@ -242,6 +336,7 @@ void controlBlower(String action, int speed = -1) {
     analogWrite(RPWM, blowerSpeed);
     digitalWrite(LPWM, LOW);
     isBlowerRunning = true;
+    blowerStartTime = millis();
     Serial.println("[OK] - Blower เริ่มทำงาน");
   } else if (action == "stop") {
     analogWrite(RPWM, 0);
@@ -264,12 +359,14 @@ void controlActuator(String action) {
     digitalWrite(ACT_IN2, LOW);
     analogWrite(ACT_ENA, 255);
     isActuatorRunning = true;
+    actuatorStartTime = millis();
     Serial.println("[OK] - Actuator ดันออก");
   } else if (action == "down") {
     digitalWrite(ACT_IN1, LOW);
     digitalWrite(ACT_IN2, HIGH);
     analogWrite(ACT_ENA, 255);
     isActuatorRunning = true;
+    actuatorStartTime = millis();
     Serial.println("[OK] - Actuator ดึงกลับ");
   } else if (action == "stop") {
     analogWrite(ACT_ENA, 0);
@@ -285,12 +382,14 @@ void controlAuger(String action) {
     digitalWrite(AUG_IN2, LOW);
     analogWrite(AUG_ENA, 200);
     isAugerRunning = true;
+    augerStartTime = millis();
     Serial.println("[OK] - Auger เดินหน้า");
   } else if (action == "reverse") {
     digitalWrite(AUG_IN1, LOW);
     digitalWrite(AUG_IN2, HIGH);
     analogWrite(AUG_ENA, 200);
     isAugerRunning = true;
+    augerStartTime = millis();
     Serial.println("[OK] - Auger ถอยหลัง");
   } else if (action == "stop") {
     analogWrite(AUG_ENA, 0);
@@ -636,25 +735,56 @@ void sendAllSensorData() {
 }
 
 void setup() {
+  // Record system start time
+  systemStartTime = millis();
+  
   // Initialize Serial communication
   Serial.begin(115200);
   while (!Serial) {
     ; // Wait for Serial port to connect
   }
   
-  Serial.println("=== Fish Feeder System Starting ===");
-  Serial.println("🚀 Based on PASSIEE02 Original Code");
-  Serial.println("📋 Simple Menu + JSON Commands Available");
+  if (PRODUCTION_MODE) {
+    Serial.println("[INIT] Fish Feeder System Starting - PRODUCTION MODE");
+    Serial.println("[INIT] Watchdog: " + String(ENABLE_WATCHDOG ? "ENABLED" : "DISABLED"));
+  } else {
+    Serial.println("=== Fish Feeder System Starting ===");
+    Serial.println("🚀 Based on PASSIEE02 Original Code");
+    Serial.println("📋 Simple Menu + JSON Commands Available");
+    Serial.println("🔧 DEBUG MODE - Full logging enabled");
+  }
   
-  // Initialize sensors
+  // Initialize watchdog timer if enabled
+  if (ENABLE_WATCHDOG) {
+    wdt_enable(WDTO_8S); // 8 second watchdog
+    Serial.println("[INIT] Watchdog timer enabled - 8 seconds");
+  }
+  
+  // Initialize sensors with error checking
   dhtBox.begin();
   dhtFeed.begin();
   waterTemp.begin();
   scale.begin(HX_DT, HX_SCK);
   
+  // Check sensor initialization
+  int deviceCount = waterTemp.getDeviceCount();
+  if (deviceCount == 0) {
+    Serial.println("[WARNING] No DS18B20 sensors found");
+  } else {
+    Serial.println("[INIT] Found " + String(deviceCount) + " DS18B20 sensor(s)");
+  }
+  
   // Load calibration from EEPROM
   EEPROM.get(EEPROM_SCALE_ADDR, scaleFactor);
   EEPROM.get(EEPROM_OFFSET_ADDR, offset);
+  EEPROM.get(EEPROM_FEED_COUNT_ADDR, feedCount);
+  
+  // Validate EEPROM data
+  if (scaleFactor == 0 || isnan(scaleFactor)) {
+    scaleFactor = 1.0;
+    Serial.println("[WARNING] Invalid scale factor, using default: 1.0");
+  }
+  
   scale.set_scale(scaleFactor);
   scale.set_offset(offset);
   
@@ -670,38 +800,102 @@ void setup() {
   pinMode(AUG_IN1, OUTPUT);
   pinMode(AUG_IN2, OUTPUT);
   
-  // Set initial states (relays OFF)
-  digitalWrite(RELAY_IN1, HIGH);
+  // Set initial states (all OFF for safety)
+  digitalWrite(RPWM, LOW);
+  digitalWrite(LPWM, LOW);
+  digitalWrite(ACT_ENA, LOW);
+  digitalWrite(AUG_ENA, LOW);
+  digitalWrite(RELAY_IN1, HIGH); // Active LOW relays
   digitalWrite(RELAY_IN2, HIGH);
   
-  Serial.println("✅ All systems initialized successfully");
-  Serial.println("📡 Waiting for commands...");
-  Serial.println();
+  // Initialize state variables
+  isBlowerRunning = false;
+  isActuatorRunning = false;
+  isAugerRunning = false;
+  relay1State = false;
+  relay2State = false;
+  systemError = false;
+  lastError = "";
   
-  // แสดงเมนูหลัง setup
-  showSimpleMenu();
+  if (PRODUCTION_MODE) {
+    Serial.println("[INIT] System initialized - Production ready");
+    Serial.println("[INIT] Scale factor: " + String(scaleFactor, 6));
+    Serial.println("[INIT] Feed count: " + String(feedCount));
+  } else {
+    Serial.println("✅ All systems initialized successfully");
+    Serial.println("📡 Waiting for commands...");
+    Serial.println();
+    showSimpleMenu(); // แสดงเมนูเฉพาะ debug mode
+  }
   
   // Send initial system status
+  logSystemEvent("System started successfully");
   sendHeartbeat();
+  
+  // Reset watchdog for the first time
+  resetWatchdog();
 }
 
+// === Loop แบบ Production ===
 void loop() {
+  resetWatchdog(); // Reset watchdog timer
+  
+  // Check for system errors
+  if (systemError) {
+    if (millis() % 10000 == 0) { // Every 10 seconds
+      logSystemEvent("System in error state: " + lastError);
+    }
+    delay(100);
+    return;
+  }
+  
+  // Safety timeouts
+  unsigned long currentTime = millis();
+  
+  // Blower safety timeout
+  if (isBlowerRunning && (currentTime - blowerStartTime > SAFETY_TIMEOUT)) {
+    controlBlower("stop");
+    logSystemEvent("Blower stopped - safety timeout");
+  }
+  
+  // Actuator safety timeout
+  if (isActuatorRunning && (currentTime - actuatorStartTime > SAFETY_TIMEOUT)) {
+    controlActuator("stop");
+    logSystemEvent("Actuator stopped - safety timeout");
+  }
+  
+  // Auger safety timeout
+  if (isAugerRunning && (currentTime - augerStartTime > SAFETY_TIMEOUT)) {
+    controlAuger("stop");
+    logSystemEvent("Auger stopped - safety timeout");
+  }
+  
   // Process incoming commands
   processCommand();
   
   // Send sensor data at regular intervals
-  if (millis() - lastSensorRead >= SENSOR_INTERVAL) {
-    displaySensorReadout();  // แสดงผลแบบสวยงาม
+  if (currentTime - lastSensorRead >= SENSOR_INTERVAL) {
+    // Check sensor health
+    if (!checkSensorHealth()) {
+      systemError = true;
+      logSystemEvent("Sensor health check failed");
+      emergencyShutdown();
+      return;
+    }
+    
+    if (!PRODUCTION_MODE) {
+      displaySensorReadout();  // แสดงผลแบบสวยงาม (เฉพาะ debug)
+    }
     sendAllSensorData();     // ส่ง JSON ให้ Raspberry Pi
-    lastSensorRead = millis();
+    lastSensorRead = currentTime;
   }
   
   // Send heartbeat signal
-  if (millis() - lastHeartbeat >= HEARTBEAT_INTERVAL) {
+  if (currentTime - lastHeartbeat >= HEARTBEAT_INTERVAL) {
     sendHeartbeat();
-    lastHeartbeat = millis();
+    lastHeartbeat = currentTime;
   }
   
   // Small delay to prevent CPU hogging
-  delay(10);
+  delay(PRODUCTION_MODE ? 50 : 10); // เพิ่ม delay ใน production
 }
