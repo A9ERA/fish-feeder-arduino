@@ -7,6 +7,9 @@
 #include "weight_sensor.h"
 #include "acs712_sensor.h"
 #include "voltage_sensor.h"
+#include "actuator_motor.h"
+#include "auger_motor.h"
+#include "relay_control.h"
 #include "sensor_service.h"
 
 // Forward declaration of printJson function
@@ -15,32 +18,55 @@ static void printJson(String jsonString);
 enum DeviceType {
     DEVICE_UNKNOWN,
     DEVICE_BLOWER,
-    DEVICE_ACTUATORMOTOR
+    DEVICE_ACTUATORMOTOR,
+    DEVICE_AUGER,
+    DEVICE_RELAY
 };
 
 DeviceType parseDeviceType(const String& device) {
     if (device == "blower") return DEVICE_BLOWER;
     if (device == "actuatormotor") return DEVICE_ACTUATORMOTOR;
+    if (device == "auger") return DEVICE_AUGER;
+    if (device == "relay") return DEVICE_RELAY;
     return DEVICE_UNKNOWN;
 }
 
 void initAllSensors() {
+  // Read sensors
   initDHT();
   initSoil();
   initWaterTemp();
   initWeight();
   initACS712();
   initVoltageSensor();
+
+  // Control devices
   initBlower();
+  initActuatorMotor();
+  initAugerMotor();
+  initRelayControl();
 }
 
 void controlSensor() {
-    // control command will be like this:
+    // control command will be:
+    
     // [control]:blower:start\n
     // [control]:blower:stop\n
     // [control]:blower:speed:100\n
     // [control]:blower:direction:reverse\n
     // [control]:blower:direction:normal\n
+    // [control]:actuator:up\n
+    // [control]:actuator:down\n
+    // [control]:actuator:stop\n
+    // [control]:auger:forward\n
+    // [control]:auger:backward\n
+    // [control]:auger:stop\n
+    // [control]:auger:speedtest\n
+    // [control]:relay:led:on\n
+    // [control]:relay:led:off\n
+    // [control]:relay:fan:on\n
+    // [control]:relay:fan:off\n
+    // [control]:relay:all:off\n
     
     if (Serial.available()) {
         String command = Serial.readStringUntil('\n');
@@ -75,11 +101,41 @@ void controlSensor() {
                 break;
             case DEVICE_ACTUATORMOTOR:
                 if (rest == "up") {
-                    // actuatorMotorUp();
+                    actuatorMotorUp();
                 } else if (rest == "down") {
-                    // actuatorMotorDown();
+                    actuatorMotorDown();
                 } else if (rest == "stop") {
-                    // actuatorMotorStop();
+                    actuatorMotorStop();
+                }
+                break;
+            case DEVICE_AUGER:
+                if (rest == "forward") {
+                    augerMotorForward();
+                } else if (rest == "backward") {
+                    augerMotorBackward();
+                } else if (rest == "stop") {
+                    augerMotorStop();
+                } else if (rest == "speedtest") {
+                    augerMotorSpeedTest();
+                }
+                break;
+            case DEVICE_RELAY:
+                if (rest.startsWith("led:")) {
+                    String ledCmd = rest.substring(4);
+                    if (ledCmd == "on") {
+                        relayLedOn();
+                    } else if (ledCmd == "off") {
+                        relayLedOff();
+                    }
+                } else if (rest.startsWith("fan:")) {
+                    String fanCmd = rest.substring(4);
+                    if (fanCmd == "on") {
+                        relayFanOn();
+                    } else if (fanCmd == "off") {
+                        relayFanOff();
+                    }
+                } else if (rest == "all:off") {
+                    relayAllOff();
                 }
                 break;
             default:
