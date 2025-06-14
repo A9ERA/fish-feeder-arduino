@@ -199,12 +199,25 @@ static void printJson(String jsonString) {
 }
 
 void readAndPrintAllSensors() {
-  printDHTSystem();
-  printDHTFeeder();
-  printSoil();
-  printWaterTemp();
-  printWeight();
-  printCurrent();
-  printVoltage();
+  // Get current time in seconds since boot
+  unsigned long currentMillis = millis();
+  unsigned long currentSeconds = (currentMillis / 1000) % 60;
+  
+  // Only print when seconds value is divisible by 5 (0, 5, 10, 15, 20, ...)
+  if (currentSeconds % 5 == 0) {
+    // Add a small delay to prevent multiple prints within the same second
+    static unsigned long lastPrintTime = 0;
+    if (currentMillis - lastPrintTime >= 5000) { // At least 5 seconds between prints
+      printDHTSystem();
+      printDHTFeeder();
+      printSoil();
+      printWaterTemp();
+      printWeight();
+      printCurrent();
+      printVoltage();
+      
+      lastPrintTime = currentMillis;
+    }
+  }
 }
 

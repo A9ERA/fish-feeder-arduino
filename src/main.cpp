@@ -7,7 +7,7 @@ void setup() {
 }
 
 void loop() {
-  // readAndPrintAllSensors();
+  readAndPrintAllSensors();
   controlSensor();
-  // delay(1000);
+  delay(500); // Short delay to prevent overwhelming the system
 }
