@@ -9,5 +9,5 @@ void setup() {
 void loop() {
   // readAndPrintAllSensors();
   controlSensor();
-  delay(5000);
+  // delay(1000);
 }

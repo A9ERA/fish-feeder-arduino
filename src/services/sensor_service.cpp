@@ -25,7 +25,7 @@ enum DeviceType {
 
 DeviceType parseDeviceType(const String& device) {
     if (device == "blower") return DEVICE_BLOWER;
-    if (device == "actuatormotor") return DEVICE_ACTUATORMOTOR;
+    if (device == "actuator") return DEVICE_ACTUATORMOTOR;
     if (device == "auger") return DEVICE_AUGER;
     if (device == "relay") return DEVICE_RELAY;
     return DEVICE_UNKNOWN;
