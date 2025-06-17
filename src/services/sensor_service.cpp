@@ -62,6 +62,7 @@ void controlSensor() {
     // [control]:auger:backward\n
     // [control]:auger:stop\n
     // [control]:auger:speedtest\n
+    // [control]:auger:setspeed:100\n
     // [control]:relay:led:on\n
     // [control]:relay:led:off\n
     // [control]:relay:fan:on\n
@@ -117,6 +118,9 @@ void controlSensor() {
                     augerMotorStop();
                 } else if (rest == "speedtest") {
                     augerMotorSpeedTest();
+                } else if (rest == "setspeed") {
+                    int speed = rest.substring(9).toInt();
+                    augerMotorSetSpeed(speed);
                 }
                 break;
             case DEVICE_RELAY:

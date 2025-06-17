@@ -14,5 +14,6 @@ void augerMotorForward();
 void augerMotorBackward();
 void augerMotorStop();
 void augerMotorSpeedTest();
+void augerMotorSetSpeed(int speed);
 
 #endif // AUGER_MOTOR_H 

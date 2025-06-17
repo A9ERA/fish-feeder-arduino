@@ -5,6 +5,7 @@
 static bool augerUsedLoad = false;
 static bool freezeBattery = false;
 static unsigned long augerStopTime = 0;
+static int augerSpeed = 0;
 
 void initAugerMotor() {
     pinMode(AUG_ENA, OUTPUT);
@@ -19,7 +20,7 @@ void initAugerMotor() {
 void augerMotorForward() {
     digitalWrite(AUG_IN1, HIGH);
     digitalWrite(AUG_IN2, LOW);
-    analogWrite(AUG_ENA, 200);  // Forward at ~78% speed
+    analogWrite(AUG_ENA, augerSpeed);
     augerUsedLoad = true;
     freezeBattery = true;
     augerStopTime = millis();
@@ -29,7 +30,7 @@ void augerMotorForward() {
 void augerMotorBackward() {
     digitalWrite(AUG_IN1, LOW);
     digitalWrite(AUG_IN2, HIGH);
-    analogWrite(AUG_ENA, 200);  // Backward at ~78% speed
+    analogWrite(AUG_ENA, augerSpeed);
     augerUsedLoad = true;
     freezeBattery = true;
     augerStopTime = millis();
@@ -37,7 +38,7 @@ void augerMotorBackward() {
 }
 
 void augerMotorStop() {
-    analogWrite(AUG_ENA, 0);  // Stop PWM output
+    analogWrite(AUG_ENA, 0);
     augerUsedLoad = false;
     freezeBattery = false;
     augerStopTime = millis();
@@ -64,4 +65,9 @@ void augerMotorSpeedTest() {
     freezeBattery = false;
     augerStopTime = millis();
     Serial.println("[AUGER] Speed test completed");
-} 
+}
+
+void augerMotorSetSpeed(int speed) {
+    augerSpeed = speed;
+    Serial.println("[AUGER] Auger speed set to " + String(speed));
+}
