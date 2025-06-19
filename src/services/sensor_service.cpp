@@ -80,7 +80,6 @@ void controlSensor() {
 
         String device = command.substring(0, firstColon);
         String rest = command.substring(firstColon + 1);
-
         DeviceType deviceType = parseDeviceType(device);
         switch (deviceType) {
             case DEVICE_BLOWER:
@@ -118,7 +117,7 @@ void controlSensor() {
                     augerMotorStop();
                 } else if (rest == "speedtest") {
                     augerMotorSpeedTest();
-                } else if (rest == "setspeed") {
+                } else if (rest.startsWith("setspeed:")) {
                     int speed = rest.substring(9).toInt();
                     augerMotorSetSpeed(speed);
                 }

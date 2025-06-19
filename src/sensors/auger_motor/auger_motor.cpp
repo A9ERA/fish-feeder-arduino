@@ -5,7 +5,7 @@
 static bool augerUsedLoad = false;
 static bool freezeBattery = false;
 static unsigned long augerStopTime = 0;
-static int augerSpeed = 0;
+static int augerSpeed = 255;
 
 void initAugerMotor() {
     pinMode(AUG_ENA, OUTPUT);
