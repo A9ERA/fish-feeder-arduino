@@ -1,7 +1,7 @@
 #include "../../../include/blower.h"
 
 // กำหนดความเร็วเริ่มต้นของ Blower (0-255)
-int currentSpeed = 170;
+int currentSpeed = 230;
 // สถานะการทำงานของ Blower (true = ทำงาน, false = หยุด)
 bool isRunning = false;
 // กำหนดทิศทางการหมุนของ Blower (true = หมุนย้อนกลับ, false = หมุนปกติ)
