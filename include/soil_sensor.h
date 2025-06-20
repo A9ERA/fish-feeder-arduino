@@ -5,7 +5,7 @@
 #include <ArduinoJson.h>
 
 // Pin definitions
-#define SOIL_PIN A0
+#define SOIL_PIN A2
 
 // Sensor name
 #define SOIL_SENSOR "SOIL_MOISTURE"

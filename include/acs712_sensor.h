@@ -5,7 +5,7 @@
 #include <ArduinoJson.h>
 
 // Pin definitions
-#define ACS712_PIN A2
+#define ACS712_PIN A0
 
 // Sensor name
 #define ACS712_SENSOR "CURRENT_SYSTEM"

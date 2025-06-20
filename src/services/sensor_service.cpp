@@ -7,6 +7,7 @@
 #include "weight_sensor.h"
 #include "acs712_sensor.h"
 #include "voltage_sensor.h"
+#include "power_monitor.h"
 #include "actuator_motor.h"
 #include "auger_motor.h"
 #include "relay_control.h"
@@ -39,6 +40,7 @@ void initAllSensors() {
   initWeight();
   initACS712();
   initVoltageSensor();
+  initPowerMonitor();
 
   // Control devices
   initBlower();
@@ -197,6 +199,13 @@ static void printVoltage() {
   printJson(jsonString);
 }
 
+static void printPowerMonitor() {
+  String jsonString;
+  StaticJsonDocument<1024> powerMonitor = readPowerMonitor();
+  serializeJson(powerMonitor, jsonString);
+  printJson(jsonString);
+}
+
 static void printJson(String jsonString) {
   Serial.println("[SEND] - " + jsonString);
 }
@@ -218,6 +227,7 @@ void readAndPrintAllSensors() {
       printWeight();
       printCurrent();
       printVoltage();
+      printPowerMonitor();
       
       lastPrintTime = currentMillis;
     }
