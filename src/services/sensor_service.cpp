@@ -3,10 +3,7 @@
 #include "blower.h"
 #include "dht_sensor.h"
 #include "soil_sensor.h"
-#include "water_temp_sensor.h"
 #include "weight_sensor.h"
-#include "acs712_sensor.h"
-#include "voltage_sensor.h"
 #include "power_monitor.h"
 #include "actuator_motor.h"
 #include "auger_motor.h"
@@ -36,10 +33,7 @@ void initAllSensors() {
   // Read sensors
   initDHT();
   initSoil();
-  initWaterTemp();
   initWeight();
-  initACS712();
-  initVoltageSensor();
   initPowerMonitor();
 
   // Control devices
@@ -171,31 +165,10 @@ static void printSoil() {
   printJson(jsonString);
 }
 
-static void printWaterTemp() {
-  String jsonString;
-  StaticJsonDocument<256> waterTemp = readWaterTemp();
-  serializeJson(waterTemp, jsonString);
-  printJson(jsonString);
-}
-
 static void printWeight() {
   String jsonString;
   StaticJsonDocument<256> weight = readWeight();
   serializeJson(weight, jsonString);
-  printJson(jsonString);
-}
-
-static void printCurrent() {
-  String jsonString;
-  StaticJsonDocument<256> current = readACS712();
-  serializeJson(current, jsonString);
-  printJson(jsonString);
-}
-
-static void printVoltage() {
-  String jsonString;
-  StaticJsonDocument<256> voltage = readVoltageSensor();
-  serializeJson(voltage, jsonString);
   printJson(jsonString);
 }
 
@@ -216,17 +189,14 @@ void readAndPrintAllSensors() {
   unsigned long currentSeconds = (currentMillis / 1000) % 60;
   
   // Only print when seconds value is divisible by 5 (0, 5, 10, 15, 20, ...)
-  if (currentSeconds % 5 == 0) {
+  if (currentSeconds % 2 == 0) {
     // Add a small delay to prevent multiple prints within the same second
     static unsigned long lastPrintTime = 0;
-    if (currentMillis - lastPrintTime >= 5000) { // At least 5 seconds between prints
+    if (currentMillis - lastPrintTime >= 2000) { // At least 5 seconds between prints
       printDHTSystem();
       printDHTFeeder();
       printSoil();
-      printWaterTemp();
       printWeight();
-      printCurrent();
-      printVoltage();
       printPowerMonitor();
       
       lastPrintTime = currentMillis;

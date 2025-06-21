@@ -5,8 +5,8 @@
 #include <ArduinoJson.h>
 
 // Pin definitions
-#define SOLAR_VOLTAGE_PIN A3
-#define SOLAR_CURRENT_PIN A4
+#define SOLAR_VOLTAGE_PIN A6
+#define SOLAR_CURRENT_PIN A7
 #define LOAD_VOLTAGE_PIN A1
 #define LOAD_CURRENT_PIN A0
 

@@ -64,7 +64,7 @@ void readSensors(float& solarV, float& solarI, float& loadV, float& loadI) {
   solarV = (sumVS / (float)sampleCount / 1023.0) * V_REF * V_FACTOR;
   loadV  = (sumVL / (float)sampleCount / 1023.0) * V_REF * V_FACTOR;
 
-  solarI = (((sumIS / (float)sampleCount) / 1023.0) * V_REF - ZERO_CURRENT_VOLTAGE) / SENSITIVITY - 0.5;
+  solarI = (((sumIS / (float)sampleCount) / 1023.0) * V_REF - ZERO_CURRENT_VOLTAGE) / SENSITIVITY;
   loadI  = (((sumIL / (float)sampleCount) / 1023.0) * V_REF - ZERO_CURRENT_VOLTAGE) / SENSITIVITY;
 
   if (solarV < 1.0) solarV = 0.0;
