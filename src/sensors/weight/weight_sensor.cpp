@@ -33,9 +33,9 @@ StaticJsonDocument<256> readWeight() {
   JsonArray values = doc.createNestedArray("value");
 
   float weight = scale.get_units(10);
-  Serial.print("⚖️ น้ำหนัก foo: ");
-  Serial.print(weight, 3);
-  Serial.println(" kg");
+  // Serial.print("⚖️ น้ำหนัก foo: ");
+  // Serial.print(weight, 3);
+  // Serial.println(" kg");
 
   JsonObject weightValue = values.createNestedObject();
   weightValue["type"] = "weight";

@@ -13,6 +13,11 @@
 // Forward declaration of printJson function
 static void printJson(String jsonString);
 
+// Timer-based sensor service variables
+static unsigned long sensorPrintInterval = 2000; // Default 2 seconds
+static unsigned long lastSensorPrintTime = 0;
+static bool sensorServiceActive = false;
+
 enum DeviceType {
     DEVICE_UNKNOWN,
     DEVICE_BLOWER,
@@ -29,6 +34,48 @@ DeviceType parseDeviceType(const String& device) {
     return DEVICE_UNKNOWN;
 }
 
+// Helper functions to print individual sensor data
+static void printDHTSystem() {
+  String jsonString;
+  StaticJsonDocument<256> dhtSystem = readDHTSystem();
+  serializeJson(dhtSystem, jsonString);
+  printJson(jsonString);
+}
+
+static void printDHTFeeder() {
+  String jsonString;
+  StaticJsonDocument<256> dhtFeeder = readDHTFeeder();
+  serializeJson(dhtFeeder, jsonString);
+  printJson(jsonString);
+}
+
+static void printSoil() {
+  String jsonString;
+  StaticJsonDocument<256> soil = readSoil();
+  serializeJson(soil, jsonString);
+  printJson(jsonString);
+}
+
+static void printWeight() {
+  String jsonString;
+  StaticJsonDocument<256> weight = readWeight();
+  serializeJson(weight, jsonString);
+  printJson(jsonString);
+}
+
+static void printPowerMonitor() {
+  String jsonString;
+  StaticJsonDocument<1024> powerMonitor = readPowerMonitor();
+  serializeJson(powerMonitor, jsonString);
+  printJson(jsonString);
+}
+
+
+
+static void printJson(String jsonString) {
+  Serial.println("[SEND] - " + jsonString);
+}
+
 void initAllSensors() {
   // Read sensors
   initDHT();
@@ -43,9 +90,56 @@ void initAllSensors() {
   initRelayControl();
 }
 
+// New timer-based sensor service functions
+void initSensorService() {
+  lastSensorPrintTime = millis();
+  sensorServiceActive = true;
+  Serial.println("[INFO] - Sensor service initialized in background mode");
+}
+
+void updateSensorService() {
+  if (!sensorServiceActive) return;
+  
+  unsigned long currentMillis = millis();
+  
+  // Check if it's time to print sensor data
+  if (currentMillis - lastSensorPrintTime >= sensorPrintInterval) {
+    // Print all sensor data
+    printDHTSystem();
+    printDHTFeeder();
+    printSoil();
+    printWeight();
+    printPowerMonitor();
+    
+    lastSensorPrintTime = currentMillis;
+  }
+}
+
+void setSensorPrintInterval(unsigned long intervalMs) {
+  sensorPrintInterval = intervalMs;
+  Serial.println("[INFO] - Sensor print interval set to: " + String(intervalMs) + "ms");
+}
+
+// Sensor service control functions
+void startSensorService() {
+  sensorServiceActive = true;
+  lastSensorPrintTime = millis();
+  Serial.println("[INFO] - Sensor service started");
+}
+
+void stopSensorService() {
+  sensorServiceActive = false;
+  Serial.println("[INFO] - Sensor service stopped");
+}
+
+bool isSensorServiceActive() {
+  return sensorServiceActive;
+}
+
 void controlSensor() {
     // control command will be:
     
+    // Device controls:
     // [control]:blower:start\n
     // [control]:blower:stop\n
     // [control]:blower:speed:100\n
@@ -65,6 +159,12 @@ void controlSensor() {
     // [control]:relay:fan:off\n
     // [control]:relay:all:off\n
     
+    // Sensor service controls:
+    // [control]:sensors:start\n
+    // [control]:sensors:stop\n
+    // [control]:sensors:interval:1000\n
+    // [control]:sensors:status\n
+    
     if (Serial.available()) {
         String command = Serial.readStringUntil('\n');
         command.trim();
@@ -76,6 +176,24 @@ void controlSensor() {
 
         String device = command.substring(0, firstColon);
         String rest = command.substring(firstColon + 1);
+        
+        // Handle sensor service commands
+        if (device == "sensors") {
+            if (rest == "start") {
+                startSensorService();
+            } else if (rest == "stop") {
+                stopSensorService();
+            } else if (rest.startsWith("interval:")) {
+                unsigned long interval = rest.substring(9).toInt();
+                setSensorPrintInterval(interval);
+            } else if (rest == "status") {
+                Serial.println("[INFO] - Sensor service status: " + 
+                             String(isSensorServiceActive() ? "ACTIVE" : "INACTIVE"));
+                Serial.println("[INFO] - Print interval: " + String(sensorPrintInterval) + "ms");
+            }
+            return;
+        }
+        
         DeviceType deviceType = parseDeviceType(device);
         switch (deviceType) {
             case DEVICE_BLOWER:
@@ -142,45 +260,6 @@ void controlSensor() {
                 break;
         }
     }
-}
-
-static void printDHTSystem() {
-  String jsonString;
-  StaticJsonDocument<256> dhtSystem = readDHTSystem();
-  serializeJson(dhtSystem, jsonString);
-  printJson(jsonString);
-}
-
-static void printDHTFeeder() {
-  String jsonString;
-  StaticJsonDocument<256> dhtFeeder = readDHTFeeder();
-  serializeJson(dhtFeeder, jsonString);
-  printJson(jsonString);
-}
-
-static void printSoil() {
-  String jsonString;
-  StaticJsonDocument<256> soil = readSoil();
-  serializeJson(soil, jsonString);
-  printJson(jsonString);
-}
-
-static void printWeight() {
-  String jsonString;
-  StaticJsonDocument<256> weight = readWeight();
-  serializeJson(weight, jsonString);
-  printJson(jsonString);
-}
-
-static void printPowerMonitor() {
-  String jsonString;
-  StaticJsonDocument<1024> powerMonitor = readPowerMonitor();
-  serializeJson(powerMonitor, jsonString);
-  printJson(jsonString);
-}
-
-static void printJson(String jsonString) {
-  Serial.println("[SEND] - " + jsonString);
 }
 
 void readAndPrintAllSensors() {

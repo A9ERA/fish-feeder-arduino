@@ -149,9 +149,9 @@ StaticJsonDocument<1024> readPowerMonitor() {
   batteryStatusObj["value"] = batteryStatus;
 
   // Print debug information
-  Serial.print("⚡ Solar: "); Serial.print(solarV, 1); Serial.print("V, "); Serial.print(solarI, 3); Serial.print("A");
-  Serial.print(" | Load: "); Serial.print(loadV, 1); Serial.print("V, "); Serial.print(loadI, 3); Serial.print("A");
-  Serial.print(" | Battery: "); Serial.print(batteryPercent, 1); Serial.print("% ("); Serial.print(batteryStatus); Serial.println(")");
+  // Serial.print("⚡ Solar: "); Serial.print(solarV, 1); Serial.print("V, "); Serial.print(solarI, 3); Serial.print("A");
+  // Serial.print(" | Load: "); Serial.print(loadV, 1); Serial.print("V, "); Serial.print(loadI, 3); Serial.print("A");
+  // Serial.print(" | Battery: "); Serial.print(batteryPercent, 1); Serial.print("% ("); Serial.print(batteryStatus); Serial.println(")");
 
   return doc;
 } 

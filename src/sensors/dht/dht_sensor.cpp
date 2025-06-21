@@ -19,21 +19,21 @@ StaticJsonDocument<256> readDHTSystem() {
   float temp = dht1.readTemperature();
   float hum = dht1.readHumidity();
 
-  Serial.print("📍 DHT1 (ขา 48) - 🌡️ Temp: ");
+  // Serial.print("📍 DHT1 (ขา 48) - 🌡️ Temp: ");
   if (isnan(temp)) {
-    Serial.print("NaN");
+    // Serial.print("NaN");
     temp = 0;
   } else {
-    Serial.print(temp);
+    // Serial.print(temp);
   }
-  Serial.print(" °C\t💧 Humidity: ");
+  // Serial.print(" °C\t💧 Humidity: ");
   if (isnan(hum)) {
-    Serial.print("NaN");
+    // Serial.print("NaN");
     hum = 0;
   } else {
-    Serial.print(hum);
+    // Serial.print(hum);
   }
-  Serial.println(" %");
+  // Serial.println(" %");
 
   JsonObject tempValue = values.createNestedObject();
   tempValue["type"] = "temperature";
@@ -56,21 +56,21 @@ StaticJsonDocument<256> readDHTFeeder() {
   float temp = dht2.readTemperature();
   float hum = dht2.readHumidity();
 
-  Serial.print("📍 DHT2 (ขา 46) - 🌡️ Temp: ");
+  // Serial.print("📍 DHT2 (ขา 46) - 🌡️ Temp: ");
   if (isnan(temp)) {
-    Serial.print("NaN");
+    // Serial.print("NaN");
     temp = 0;
   } else {
-    Serial.print(temp);
+    // Serial.print(temp);
   }
-  Serial.print(" °C\t💧 Humidity: ");
+  // Serial.print(" °C\t💧 Humidity: ");
   if (isnan(hum)) {
-    Serial.print("NaN");
+    // Serial.print("NaN");
     hum = 0;
   } else {
-    Serial.print(hum);
+    // Serial.print(hum);
   }
-  Serial.println(" %");
+  // Serial.println(" %");
 
   JsonObject tempValue = values.createNestedObject();
   tempValue["type"] = "temperature";

@@ -14,11 +14,11 @@ StaticJsonDocument<256> readSoil() {
   float soilMoisture = map(soilRaw, 300, 1023, 100, 0);  // Raw ต่ำ = ชื้นมาก
   soilMoisture = constrain(soilMoisture, 0, 100);
 
-  Serial.print("📟 Raw Value: ");
-  Serial.print(soilRaw);
-  Serial.print("  🌱 Soil Moisture: ");
-  Serial.print(soilMoisture, 0);
-  Serial.println(" %");
+  // Serial.print("📟 Raw Value: ");
+  // Serial.print(soilRaw);
+  // Serial.print("  🌱 Soil Moisture: ");
+  // Serial.print(soilMoisture, 0);
+  // Serial.println(" %");
 
   JsonObject moistureValue = values.createNestedObject();
   moistureValue["type"] = "soil_moisture";
