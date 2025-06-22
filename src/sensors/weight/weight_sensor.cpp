@@ -29,7 +29,7 @@ StaticJsonDocument<256> readWeight() {
   doc["name"] = WEIGHT_SENSOR;
   JsonArray values = doc.createNestedArray("value");
 
-  float weight = scale.get_units(10);
+  float weight = scale.get_units(20);
 
   JsonObject weightValue = values.createNestedObject();
   weightValue["type"] = "weight";

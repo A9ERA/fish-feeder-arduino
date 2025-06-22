@@ -9,6 +9,7 @@
 #include "auger_motor.h"
 #include "relay_control.h"
 #include "sensor_service.h"
+#include "feeder_service.h"
 
 // Forward declaration of printJson function
 static void printJson(String jsonString);
@@ -23,7 +24,8 @@ enum DeviceType {
     DEVICE_BLOWER,
     DEVICE_ACTUATORMOTOR,
     DEVICE_AUGER,
-    DEVICE_RELAY
+    DEVICE_RELAY,
+    DEVICE_FEEDER
 };
 
 DeviceType parseDeviceType(const String& device) {
@@ -31,6 +33,7 @@ DeviceType parseDeviceType(const String& device) {
     if (device == "actuator") return DEVICE_ACTUATORMOTOR;
     if (device == "auger") return DEVICE_AUGER;
     if (device == "relay") return DEVICE_RELAY;
+    if (device == "feeder") return DEVICE_FEEDER;
     return DEVICE_UNKNOWN;
 }
 
@@ -69,8 +72,6 @@ static void printPowerMonitor() {
   serializeJson(powerMonitor, jsonString);
   printJson(jsonString);
 }
-
-
 
 static void printJson(String jsonString) {
   Serial.println("[SEND] - " + jsonString);
@@ -159,6 +160,10 @@ void controlSensor() {
     // [control]:relay:fan:off\n
     // [control]:relay:all:off\n
     
+    // Feeder sequence controls:
+    // [control]:feeder:start:actuatorUp,actuatorDown,augerDuration,blowerDuration\n
+    // [control]:feeder:stop\n
+    
     // Sensor service controls:
     // [control]:sensors:start\n
     // [control]:sensors:stop\n
@@ -208,6 +213,29 @@ void controlSensor() {
         
         DeviceType deviceType = parseDeviceType(device);
         switch (deviceType) {
+            case DEVICE_FEEDER:
+                if (rest.startsWith("start:")) {
+                    String params = rest.substring(6);
+                    
+                    // Parse parameters: actuatorUp,actuatorDown,augerDuration,blowerDuration
+                    int comma1 = params.indexOf(',');
+                    int comma2 = params.indexOf(',', comma1 + 1);
+                    int comma3 = params.indexOf(',', comma2 + 1);
+                    
+                    if (comma1 != -1 && comma2 != -1 && comma3 != -1) {
+                        int actuatorUp = params.substring(0, comma1).toInt();
+                        int actuatorDown = params.substring(comma1 + 1, comma2).toInt();
+                        int augerDuration = params.substring(comma2 + 1, comma3).toInt();
+                        int blowerDuration = params.substring(comma3 + 1).toInt();
+                        
+                        startFeederSequence(actuatorUp, actuatorDown, augerDuration, blowerDuration);
+                    } else {
+                        Serial.println("[ERROR] - Invalid feeder start parameters format");
+                    }
+                } else if (rest == "stop") {
+                    stopFeederSequence();
+                }
+                break;
             case DEVICE_BLOWER:
                 if (rest == "start") {
                     startBlower();

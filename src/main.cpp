@@ -1,8 +1,9 @@
 #include <Arduino.h>
 #include "sensor_service.h"
+#include "feeder_service.h"
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   
   // Initialize all sensors and devices
   initAllSensors();
@@ -10,7 +11,10 @@ void setup() {
   // Initialize timer-based sensor service (runs in background)
   initSensorService();
   
-  Serial.println("[INFO] - System ready. Sensor service running in background.");
+  // Initialize feeder service (independent from sensor service)
+  initFeederService();
+  
+  Serial.println("[INFO] - System ready. Sensor service running in background, Feeder service ready for commands.");
 }
 
 void loop() {
