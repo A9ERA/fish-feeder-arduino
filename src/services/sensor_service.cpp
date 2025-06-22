@@ -14,7 +14,7 @@
 static void printJson(String jsonString);
 
 // Timer-based sensor service variables
-static unsigned long sensorPrintInterval = 2000; // Default 2 seconds
+static unsigned long sensorPrintInterval = 5000; // Default 5 seconds
 static unsigned long lastSensorPrintTime = 0;
 static bool sensorServiceActive = false;
 
@@ -165,10 +165,17 @@ void controlSensor() {
     // [control]:sensors:interval:1000\n
     // [control]:sensors:status\n
     
+    // Weight calibration controls:
+    // [control]:weight:calibrate\n
+    
     if (Serial.available()) {
         String command = Serial.readStringUntil('\n');
         command.trim();
         if (!command.startsWith("[control]:")) return;
+
+        // Debug message เมื่อรับคำสั่ง
+        Serial.println("[INFO] - Received command: " + command);
+        Serial.flush(); // Ensure the debug message is sent immediately
 
         command = command.substring(10); // remove "[control]:"
         int firstColon = command.indexOf(':');
@@ -194,46 +201,68 @@ void controlSensor() {
             return;
         }
         
+        // Handle weight calibration commands
+        if (device == "weight") {
+            if (rest == "calibrate") {
+                Serial.println("[INFO] - Weight calibration command received");
+                calibrateWeight();
+            }
+            return;
+        }
+        
         DeviceType deviceType = parseDeviceType(device);
         switch (deviceType) {
             case DEVICE_BLOWER:
                 if (rest == "start") {
                     startBlower();
+                    Serial.println("[INFO] - Blower started");
                 } else if (rest == "stop") {
                     stopBlower();
+                    Serial.println("[INFO] - Blower stopped");
                 } else if (rest.startsWith("speed:")) {
                     int speed = rest.substring(6).toInt();
                     setBlowerSpeed(speed);
+                    Serial.println("[INFO] - Blower speed set to " + String(speed));
                 } else if (rest.startsWith("direction:")) {
                     String dir = rest.substring(10);
                     if (dir == "reverse") {
                         setBlowerDirection(true);
+                        Serial.println("[INFO] - Blower direction set to reverse");
                     } else if (dir == "normal") {
                         setBlowerDirection(false);
+                        Serial.println("[INFO] - Blower direction set to normal");
                     }
                 }
                 break;
             case DEVICE_ACTUATORMOTOR:
                 if (rest == "up") {
                     actuatorMotorUp();
+                    Serial.println("[INFO] - Actuator moving up");
                 } else if (rest == "down") {
                     actuatorMotorDown();
+                    Serial.println("[INFO] - Actuator moving down");
                 } else if (rest == "stop") {
                     actuatorMotorStop();
+                    Serial.println("[INFO] - Actuator stopped");
                 }
                 break;
             case DEVICE_AUGER:
                 if (rest == "forward") {
                     augerMotorForward();
+                    Serial.println("[INFO] - Auger moving forward");
                 } else if (rest == "backward") {
                     augerMotorBackward();
+                    Serial.println("[INFO] - Auger moving backward");
                 } else if (rest == "stop") {
                     augerMotorStop();
+                    Serial.println("[INFO] - Auger stopped");
                 } else if (rest == "speedtest") {
                     augerMotorSpeedTest();
+                    Serial.println("[INFO] - Auger speed test started");
                 } else if (rest.startsWith("setspeed:")) {
                     int speed = rest.substring(9).toInt();
                     augerMotorSetSpeed(speed);
+                    Serial.println("[INFO] - Auger speed set to " + String(speed));
                 }
                 break;
             case DEVICE_RELAY:
@@ -241,22 +270,28 @@ void controlSensor() {
                     String ledCmd = rest.substring(4);
                     if (ledCmd == "on") {
                         relayLedOn();
+                        Serial.println("[INFO] - LED relay turned on");
                     } else if (ledCmd == "off") {
                         relayLedOff();
+                        Serial.println("[INFO] - LED relay turned off");
                     }
                 } else if (rest.startsWith("fan:")) {
                     String fanCmd = rest.substring(4);
                     if (fanCmd == "on") {
                         relayFanOn();
+                        Serial.println("[INFO] - Fan relay turned on");
                     } else if (fanCmd == "off") {
                         relayFanOff();
+                        Serial.println("[INFO] - Fan relay turned off");
                     }
                 } else if (rest == "all:off") {
                     relayAllOff();
+                    Serial.println("[INFO] - All relays turned off");
                 }
                 break;
             default:
                 // ไม่รู้จักอุปกรณ์
+                Serial.println("[INFO] - Unknown device: " + device);
                 break;
         }
     }
