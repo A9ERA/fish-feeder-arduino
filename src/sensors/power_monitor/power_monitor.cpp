@@ -16,36 +16,18 @@ float estimateBatteryPercentage(float voltage) {
   // • มีบอร์ดบาลานซ์ในตัว
   // • ความจุ: 12AH
   
-  const float minV = 8.4;    // 0% - ตามสเปคแรงดันต่ำสุด
-  const float maxV = 12.6;   // 100% - ตามสเปคแรงดันชาร์จเต็ม
+  const float battery_min = 8.4;    // 0% - ตามสเปคแรงดันต่ำสุด
+  const float battery_max = 12.2;   // 100% - ตามสเปคแรงดันชาร์จเต็ม
   
-  if (voltage >= maxV) return 100.0;
-  if (voltage <= minV) return 0.0;
+  // ตรวจสอบขอบเขต
+  if (voltage >= battery_max) return 100.0;
+  if (voltage <= battery_min) return 0.0;
   
-  // ⚡ LITHIUM-ION 12V 12AH DISCHARGE CURVE (ตามสเปคจริง):
-  float percent = 0.0;
+  // ⚡ ใช้สมการ Linear Interpolation แบบง่าย (ตาม reference code):
+  // output = ((voltage - battery_min) / (battery_max - battery_min)) * 100
+  float output = ((voltage - battery_min) / (battery_max - battery_min)) * 100.0;
   
-  if (voltage >= 12.4) {
-    // 12.4-12.6V = 90-100% (เต็มเกือบสุด)
-    percent = 90.0 + ((voltage - 12.4) / 0.2) * 10.0;
-  } else if (voltage >= 12.0) {
-    // 12.0-12.4V = 70-90% (ช่วงบน)
-    percent = 70.0 + ((voltage - 12.0) / 0.4) * 20.0;
-  } else if (voltage >= 11.5) {
-    // 11.5-12.0V = 40-70% (ช่วงกลาง)
-    percent = 40.0 + ((voltage - 11.5) / 0.5) * 30.0;
-  } else if (voltage >= 10.5) {
-    // 10.5-11.5V = 15-40% (ช่วงล่าง)
-    percent = 15.0 + ((voltage - 10.5) / 1.0) * 25.0;
-  } else if (voltage >= 9.0) {
-    // 9.0-10.5V = 5-15% (ช่วงต่ำ)
-    percent = 5.0 + ((voltage - 9.0) / 1.5) * 10.0;
-  } else {
-    // 8.4-9.0V = 0-5% (ช่วงวิกฤต - ใกล้หมด)
-    percent = ((voltage - 8.4) / 0.6) * 5.0;
-  }
-  
-  return constrain(percent, 0.0, 100.0);
+  return constrain(output, 0.0, 100.0);
 }
 
 // === อ่านค่าแรงดัน/กระแสแบบเฉลี่ยจากแต่ละเซ็นเซอร์ ===
@@ -75,10 +57,10 @@ void readSensors(float& solarV, float& solarI, float& loadV, float& loadI) {
 // === ตรวจสอบว่าแผงโซลาร์กำลังชาร์จแบตเตอรี่อยู่หรือไม่ ===
 bool isCharging(float solarV, float solarI) {
   // ⚡ เงื่อนไขการชาร์จ (ตามความต้องการผู้ใช้):
-  // - แสดง "กำลังชาร์จ..." เมื่อ Solar Voltage มีค่า (> 5V)
+  // - แสดง "กำลังชาร์จ..." เมื่อ Solar Voltage มีค่า (> 0V)
   // - เพื่อป้องกันการแสดงเปอร์เซ็นต์ที่ผิดพลาดขณะชาร์จ
   
-  return (solarV > 5.0);  // มีแรงดันโซลาร์ = กำลังชาร์จ
+  return (solarV > 0);  // มีแรงดันโซลาร์ = กำลังชาร์จ
 }
 
 // === ฟังก์ชันหลักสำหรับอ่านค่าและส่งคืน JSON ===
@@ -96,13 +78,8 @@ StaticJsonDocument<1024> readPowerMonitor() {
   float batteryPercent = 0.0;
   String batteryStatus = "";
   
-  if (charging) {
-    batteryStatus = "charging";
-    batteryPercent = -1.0; // ใช้ -1 แทน % เมื่อกำลังชาร์จ
-  } else {
-    batteryPercent = estimateBatteryPercentage(loadV);
-    batteryStatus = "discharging";
-  }
+  batteryStatus = charging ? "charging" : "discharging";
+  batteryPercent = estimateBatteryPercentage(loadV);
 
   // สร้าง JSON objects สำหรับแต่ละค่า
   
