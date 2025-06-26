@@ -161,7 +161,7 @@ void controlSensor() {
     // [control]:relay:all:off\n
     
     // Feeder sequence controls:
-    // [control]:feeder:start:actuatorUp,actuatorDown,augerDuration,blowerDuration\n
+    // [control]:feeder:start:feedAmount,augerDuration,blowerDuration\n
     // [control]:feeder:stop\n
     
     // Sensor service controls:
@@ -217,20 +217,18 @@ void controlSensor() {
                 if (rest.startsWith("start:")) {
                     String params = rest.substring(6);
                     
-                    // Parse parameters: actuatorUp,actuatorDown,augerDuration,blowerDuration
+                    // Parse parameters: feedAmount,augerDuration,blowerDuration
                     int comma1 = params.indexOf(',');
                     int comma2 = params.indexOf(',', comma1 + 1);
-                    int comma3 = params.indexOf(',', comma2 + 1);
                     
-                    if (comma1 != -1 && comma2 != -1 && comma3 != -1) {
-                        int actuatorUp = params.substring(0, comma1).toInt();
-                        int actuatorDown = params.substring(comma1 + 1, comma2).toInt();
-                        int augerDuration = params.substring(comma2 + 1, comma3).toInt();
-                        int blowerDuration = params.substring(comma3 + 1).toInt();
+                    if (comma1 != -1 && comma2 != -1) {
+                        int feedAmount = params.substring(0, comma1).toInt();
+                        int augerDuration = params.substring(comma1 + 1, comma2).toInt();
+                        int blowerDuration = params.substring(comma2 + 1).toInt();
                         
-                        startFeederSequence(actuatorUp, actuatorDown, augerDuration, blowerDuration);
+                        startFeederSequence(feedAmount, augerDuration, blowerDuration);
                     } else {
-                        Serial.println("[ERROR] - Invalid feeder start parameters format");
+                        Serial.println("[ERROR] - Invalid feeder start parameters format. Expected: feedAmount,augerDuration,blowerDuration");
                     }
                 } else if (rest == "stop") {
                     stopFeederSequence();

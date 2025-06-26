@@ -149,26 +149,28 @@ The system automatically reads and outputs sensor data in JSON format via serial
 ```
 
 ### Automated Feeder Sequence
-The Arduino now supports an automated feeding sequence that can be triggered with a single command from the Pi Server. The sequence runs to completion within the command:
+The Arduino now supports an automated feeding sequence that can be triggered with a single command from the Pi Server. The sequence runs to completion within the command with fixed actuator timings:
 
 ```
-[control]:feeder:start:actuatorUp,actuatorDown,augerDuration,blowerDuration
+[control]:feeder:start:augerDuration,blowerDuration
 [control]:feeder:stop
 ```
 
 **Parameters:**
-- `actuatorUp`: Duration in seconds for actuator up movement
-- `actuatorDown`: Duration in seconds for actuator down movement
 - `augerDuration`: Duration in seconds for auger operation
 - `blowerDuration`: Duration in seconds for blower operation
 
+**Fixed Timings:**
+- Actuator up: 5 seconds (hardcoded in Arduino)
+- Actuator down: 10 seconds (hardcoded in Arduino)
+
 **Example:**
 ```
-[control]:feeder:start:5,3,10,8
+[control]:feeder:start:10,8
 ```
 This will run the following automated sequence (blocking operation):
-1. Move actuator up for 5 seconds, then stop
-2. Move actuator down for 3 seconds, then stop
+1. Move actuator up for 5 seconds (fixed), then stop
+2. Move actuator down for 10 seconds (fixed), then stop
 3. Start both auger (forward) and blower simultaneously
 4. Stop auger after 10 seconds
 5. Stop blower after 8 seconds

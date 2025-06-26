@@ -3,7 +3,7 @@
 
 // Feeder service control functions
 void initFeederService();
-void startFeederSequence(int actuatorUp, int actuatorDown, int augerDuration, int blowerDuration);
+void startFeederSequence(int feedAmount, int augerDuration, int blowerDuration);
 void stopFeederSequence();
 
 #endif // FEEDER_SERVICE_H 
