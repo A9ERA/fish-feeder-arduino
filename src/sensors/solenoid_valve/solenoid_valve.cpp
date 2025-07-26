@@ -4,21 +4,27 @@ void initSolenoidValve() {
     pinMode(SOL_ENA, OUTPUT);
     pinMode(SOL_IN1, OUTPUT);
     pinMode(SOL_IN2, OUTPUT);
-    analogWrite(SOL_ENA, 0);  // Stop initially
+    
+    // Stop initially
+    digitalWrite(SOL_IN1, LOW);
+    digitalWrite(SOL_IN2, LOW);
+    analogWrite(SOL_ENA, 0);
 }
 
 void solenoidValveOpen() {
     digitalWrite(SOL_IN1, HIGH);
     digitalWrite(SOL_IN2, LOW);
-    analogWrite(SOL_ENA, 255);  // Open with max speed
+    analogWrite(SOL_ENA, 255);  // Full speed
 }
 
 void solenoidValveClose() {
     digitalWrite(SOL_IN1, LOW);
     digitalWrite(SOL_IN2, HIGH);
-    analogWrite(SOL_ENA, 255);  // Close with max speed
+    analogWrite(SOL_ENA, 255);  // Full speed
 }
 
 void solenoidValveStop() {
-    analogWrite(SOL_ENA, 0);  // Stop PWM output
+    digitalWrite(SOL_IN1, LOW);
+    digitalWrite(SOL_IN2, LOW);
+    analogWrite(SOL_ENA, 0);
 } 
