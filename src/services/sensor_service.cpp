@@ -5,8 +5,7 @@
 #include "soil_sensor.h"
 #include "weight_sensor.h"
 #include "power_monitor.h"
-#include "actuator_motor.h"
-#include "auger_motor.h"
+#include "solenoid_valve.h"
 #include "relay_control.h"
 #include "sensor_service.h"
 #include "feeder_service.h"
@@ -22,16 +21,14 @@ static bool sensorServiceActive = false;
 enum DeviceType {
     DEVICE_UNKNOWN,
     DEVICE_BLOWER,
-    DEVICE_ACTUATORMOTOR,
-    DEVICE_AUGER,
+    DEVICE_SOLENOIDVALVE,
     DEVICE_RELAY,
     DEVICE_FEEDER
 };
 
 DeviceType parseDeviceType(const String& device) {
     if (device == "blower") return DEVICE_BLOWER;
-    if (device == "actuator") return DEVICE_ACTUATORMOTOR;
-    if (device == "auger") return DEVICE_AUGER;
+    if (device == "solenoid") return DEVICE_SOLENOIDVALVE;
     if (device == "relay") return DEVICE_RELAY;
     if (device == "feeder") return DEVICE_FEEDER;
     return DEVICE_UNKNOWN;
@@ -86,8 +83,7 @@ void initAllSensors() {
 
   // Control devices
   initBlower();
-  initActuatorMotor();
-  initAugerMotor();
+  initSolenoidValve();
   initRelayControl();
 }
 
@@ -146,14 +142,9 @@ void controlSensor() {
     // [control]:blower:speed:100\n
     // [control]:blower:direction:reverse\n
     // [control]:blower:direction:normal\n
-    // [control]:actuator:up\n
-    // [control]:actuator:down\n
-    // [control]:actuator:stop\n
-    // [control]:auger:forward\n
-    // [control]:auger:backward\n
-    // [control]:auger:stop\n
-    // [control]:auger:speedtest\n
-    // [control]:auger:setspeed:100\n
+    // [control]:solenoid:open\n
+    // [control]:solenoid:close\n
+    // [control]:solenoid:stop\n
     // [control]:relay:led:on\n
     // [control]:relay:led:off\n
     // [control]:relay:fan:on\n
@@ -161,7 +152,7 @@ void controlSensor() {
     // [control]:relay:all:off\n
     
     // Feeder sequence controls:
-    // [control]:feeder:start:feedAmount,augerDuration,blowerDuration\n
+    // [control]:feeder:start:feedAmount,blowerDuration\n
     // [control]:feeder:stop\n
     
     // Sensor service controls:
@@ -217,18 +208,16 @@ void controlSensor() {
                 if (rest.startsWith("start:")) {
                     String params = rest.substring(6);
                     
-                    // Parse parameters: feedAmount,augerDuration,blowerDuration
+                    // Parse parameters: feedAmount,blowerDuration
                     int comma1 = params.indexOf(',');
-                    int comma2 = params.indexOf(',', comma1 + 1);
                     
-                    if (comma1 != -1 && comma2 != -1) {
+                    if (comma1 != -1) {
                         int feedAmount = params.substring(0, comma1).toInt();
-                        int augerDuration = params.substring(comma1 + 1, comma2).toInt();
-                        int blowerDuration = params.substring(comma2 + 1).toInt();
+                        int blowerDuration = params.substring(comma1 + 1).toInt();
                         
-                        startFeederSequence(feedAmount, augerDuration, blowerDuration);
+                        startFeederSequence(feedAmount, blowerDuration);
                     } else {
-                        Serial.println("[ERROR] - Invalid feeder start parameters format. Expected: feedAmount,augerDuration,blowerDuration");
+                        Serial.println("[ERROR] - Invalid feeder start parameters format. Expected: feedAmount,blowerDuration");
                     }
                 } else if (rest == "stop") {
                     stopFeederSequence();
@@ -251,27 +240,13 @@ void controlSensor() {
                     }
                 }
                 break;
-            case DEVICE_ACTUATORMOTOR:
-                if (rest == "up") {
-                    actuatorMotorUp();
-                } else if (rest == "down") {
-                    actuatorMotorDown();
+            case DEVICE_SOLENOIDVALVE:
+                if (rest == "open") {
+                    solenoidValveOpen();
+                } else if (rest == "close") {
+                    solenoidValveClose();
                 } else if (rest == "stop") {
-                    actuatorMotorStop();
-                }
-                break;
-            case DEVICE_AUGER:
-                if (rest == "forward") {
-                    augerMotorForward();
-                } else if (rest == "backward") {
-                    augerMotorBackward();
-                } else if (rest == "stop") {
-                    augerMotorStop();
-                } else if (rest == "speedtest") {
-                    augerMotorSpeedTest();
-                } else if (rest.startsWith("setspeed:")) {
-                    int speed = rest.substring(9).toInt();
-                    augerMotorSetSpeed(speed);
+                    solenoidValveStop();
                 }
                 break;
             case DEVICE_RELAY:

@@ -12,7 +12,7 @@ An Arduino-based automated fish feeding system with environmental monitoring and
 - **Current Sensor** (ACS712)
 - **Voltage Sensor**
 - **Blower Motor** (for air circulation)
-- **Actuator Motor** (for feeding mechanism)
+- **Solenoid Valve** (for feeding mechanism)
 
 ## Software Dependencies
 
@@ -58,32 +58,20 @@ Control the air circulation blower:
 - `speed`: Integer value (0-255) for PWM speed control
 - `direction`: `reverse` or `normal` for motor direction
 
-### Actuator Motor Control Commands
+### Solenoid Valve Control Commands
 
-Control the feeding mechanism actuator:
-
-```
-[control]:actuator:up
-[control]:actuator:down
-[control]:actuator:stop
-```
-
-### Auger Motor Control Commands
-
-Control the food dispensing auger motor:
+Control the feeding mechanism solenoid valve:
 
 ```
-[control]:auger:forward
-[control]:auger:backward
-[control]:auger:stop
-[control]:auger:speedtest
+[control]:solenoid:open
+[control]:solenoid:close
+[control]:solenoid:stop
 ```
 
 **Commands:**
-- `forward`: Rotate auger forward to dispense food
-- `backward`: Rotate auger backward
-- `stop`: Stop auger motor
-- `speedtest`: Run auger speed test sequence
+- `open`: Open solenoid valve to dispense food
+- `close`: Close solenoid valve
+- `stop`: Stop solenoid valve operation
 
 ### Relay Control Commands
 
@@ -128,17 +116,11 @@ The system automatically reads and outputs sensor data in JSON format via serial
 [control]:blower:speed:150
 ```
 
-### Controlling Feeder Actuator
+### Controlling Feeder Solenoid Valve
 ```
-[control]:actuator:up
-[control]:actuator:stop
-[control]:actuator:down
-```
-
-### Dispensing Food with Auger
-```
-[control]:auger:forward
-[control]:auger:stop
+[control]:solenoid:open
+[control]:solenoid:stop
+[control]:solenoid:close
 ```
 
 ### Controlling Relays
@@ -149,38 +131,36 @@ The system automatically reads and outputs sensor data in JSON format via serial
 ```
 
 ### Automated Feeder Sequence
-The Arduino now supports an automated feeding sequence that can be triggered with a single command from the Pi Server. The sequence runs to completion within the command with fixed actuator timings:
+The Arduino now supports an automated feeding sequence that can be triggered with a single command from the Pi Server. The sequence runs to completion within the command with fixed solenoid valve timings:
 
 ```
-[control]:feeder:start:augerDuration,blowerDuration
+[control]:feeder:start:blowerDuration
 [control]:feeder:stop
 ```
 
 **Parameters:**
-- `augerDuration`: Duration in seconds for auger operation
 - `blowerDuration`: Duration in seconds for blower operation
 
 **Fixed Timings:**
-- Actuator up: 5 seconds (hardcoded in Arduino)
-- Actuator down: 10 seconds (hardcoded in Arduino)
+- Solenoid valve open: 5 seconds (hardcoded in Arduino)
+- Solenoid valve close: 10 seconds (hardcoded in Arduino)
 
 **Example:**
 ```
-[control]:feeder:start:10,8
+[control]:feeder:start:8
 ```
 This will run the following automated sequence (blocking operation):
-1. Move actuator up for 5 seconds (fixed), then stop
-2. Move actuator down for 10 seconds (fixed), then stop
-3. Start both auger (forward) and blower simultaneously
-4. Stop auger after 10 seconds
-5. Stop blower after 8 seconds
-6. Return when sequence is complete
+1. Open solenoid valve for 5 seconds (fixed), then stop
+2. Close solenoid valve for 10 seconds (fixed), then stop
+3. Start blower for 8 seconds
+4. Stop blower after 8 seconds
+5. Return when sequence is complete
 
 **Emergency Stop:**
 ```
 [control]:feeder:stop
 ```
-This will interrupt the running sequence and immediately stop all feeder-related devices (actuator, auger, blower). The stop command is processed every 100ms during the sequence by calling `controlSensor()` within the delay loops, allowing for quick response even during blocking operations.
+This will interrupt the running sequence and immediately stop all feeder-related devices (solenoid valve, blower). The stop command is processed every 100ms during the sequence by calling `controlSensor()` within the delay loops, allowing for quick response even during blocking operations.
 
 ### Reversing Blower Direction
 ```

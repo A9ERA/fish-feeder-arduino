@@ -1,14 +1,13 @@
 #include <Arduino.h>
-#include "actuator_motor.h"
-#include "auger_motor.h"
+#include "solenoid_valve.h"
 #include "blower.h"
 #include "feeder_service.h"
 #include "sensor_service.h"
 #include "weight_sensor.h"
 
-// Constants for actuator timings
-#define ACTUATOR_UP_DURATION 5    // 5 seconds for actuator up
-#define ACTUATOR_DOWN_DURATION 10 // 10 seconds for actuator down
+// Constants for solenoid valve timings
+#define SOLENOID_OPEN_DURATION 5    // 5 seconds for solenoid open
+#define SOLENOID_CLOSE_DURATION 10 // 10 seconds for solenoid close
 
 // Weight monitoring constants
 #define WEIGHT_CHECK_INTERVAL 100    // Check weight every 100ms
@@ -135,7 +134,7 @@ bool waitForWeightReduction(float targetReduction) {
     return true;
 }
 
-void startFeederSequence(int feedAmount, int augerDuration, int blowerDuration) {
+void startFeederSequence(int feedAmount, int blowerDuration) {
     if (feederSequenceActive) {
         Serial.println("[FEEDER] Warning: Feeder sequence already active, please wait");
         return;
@@ -145,76 +144,58 @@ void startFeederSequence(int feedAmount, int augerDuration, int blowerDuration) 
     feederStopRequested = false;
     
     // Declare variables at the beginning to avoid goto bypass issues
-    int minDuration, remainingTime;
+    int minDuration, remainingTime, totalSolenoidTime, remainingBlowerTime;
     
     Serial.println("[FEEDER] Starting automated feeder sequence");
     Serial.println("[FEEDER] Feed amount: " + String(feedAmount) + "g");
     
-    // Step 1: Actuator up
-    Serial.println("[FEEDER] Step 1: Moving actuator up for " + String(ACTUATOR_UP_DURATION) + " seconds");
-    actuatorMotorUp();
-    if (!interruptibleDelay(ACTUATOR_UP_DURATION * 1000)) {
-        actuatorMotorStop();
+    // Step 1: Start blower and open solenoid valve simultaneously
+    Serial.println("[FEEDER] Step 1: Starting blower and opening solenoid valve");
+    Serial.println("[FEEDER] Blower duration: " + String(blowerDuration) + "s");
+    Serial.println("[FEEDER] Solenoid open duration: " + String(SOLENOID_OPEN_DURATION) + "s");
+    
+    startBlower();
+    solenoidValveOpen();
+    
+    // Wait for solenoid open duration
+    if (!interruptibleDelay(SOLENOID_OPEN_DURATION * 1000)) {
+        solenoidValveStop();
+        stopBlower();
         goto emergency_stop;
     }
-    actuatorMotorStop();
-    Serial.println("[FEEDER] Step 1 completed: Actuator up movement finished");
+    solenoidValveStop();
+    Serial.println("[FEEDER] Step 1 completed: Solenoid valve open finished, blower continues");
     
     // Wait for weight reduction instead of fixed delay
     if (!waitForWeightReduction(feedAmount)) {
-        goto emergency_stop;
-    }
-    
-    // Step 2: Actuator down
-    Serial.println("[FEEDER] Step 2: Moving actuator down for " + String(ACTUATOR_DOWN_DURATION) + " seconds");
-    actuatorMotorDown();
-    if (!interruptibleDelay(ACTUATOR_DOWN_DURATION * 1000)) {
-        actuatorMotorStop();
-        goto emergency_stop;
-    }
-    actuatorMotorStop();
-    Serial.println("[FEEDER] Step 2 completed: Actuator down movement finished");
-    
-    // Small delay before starting auger and blower
-    if (!interruptibleDelay(500)) {
-        goto emergency_stop;
-    }
-    
-    // Step 3: Start auger and blower simultaneously
-    Serial.println("[FEEDER] Step 3: Starting auger (forward) and blower simultaneously");
-    Serial.println("[FEEDER] Auger duration: " + String(augerDuration) + "s, Blower duration: " + String(blowerDuration) + "s");
-    
-    augerMotorForward();
-    startBlower();
-    
-    // Wait for the shorter duration, then stop that device
-    minDuration = min(augerDuration, blowerDuration);
-    
-    // Wait for the shorter duration
-    if (!interruptibleDelay(minDuration * 1000)) {
-        goto emergency_stop;
-    }
-    
-    // Stop the device with shorter duration
-    if (augerDuration <= blowerDuration) {
-        augerMotorStop();
-        // Wait for remaining blower time
-        if (blowerDuration > augerDuration) {
-            remainingTime = blowerDuration - augerDuration;
-            if (!interruptibleDelay(remainingTime * 1000)) {
-                goto emergency_stop;
-            }
-        }
         stopBlower();
-    } else {
+        goto emergency_stop;
+    }
+    
+    // Step 2: Close solenoid valve (blower continues)
+    Serial.println("[FEEDER] Step 2: Closing solenoid valve for " + String(SOLENOID_CLOSE_DURATION) + " seconds");
+    solenoidValveClose();
+    if (!interruptibleDelay(SOLENOID_CLOSE_DURATION * 1000)) {
+        solenoidValveStop();
         stopBlower();
-        // Wait for remaining auger time
-        remainingTime = augerDuration - blowerDuration;
-        if (!interruptibleDelay(remainingTime * 1000)) {
+        goto emergency_stop;
+    }
+    solenoidValveStop();
+    Serial.println("[FEEDER] Step 2 completed: Solenoid valve close finished, blower continues");
+    
+    // Calculate remaining blower time
+    totalSolenoidTime = SOLENOID_OPEN_DURATION + SOLENOID_CLOSE_DURATION;
+    remainingBlowerTime = blowerDuration - totalSolenoidTime;
+    
+    if (remainingBlowerTime > 0) {
+        Serial.println("[FEEDER] Step 3: Continuing blower for remaining " + String(remainingBlowerTime) + "s");
+        if (!interruptibleDelay(remainingBlowerTime * 1000)) {
+            stopBlower();
             goto emergency_stop;
         }
-        augerMotorStop();
     }
+    
+    stopBlower();
     
     feederSequenceActive = false;
     feederStopRequested = false;
@@ -222,8 +203,7 @@ void startFeederSequence(int feedAmount, int augerDuration, int blowerDuration) 
     return;
 
 emergency_stop:
-    actuatorMotorStop();
-    augerMotorStop();
+    solenoidValveStop();
     stopBlower();
     feederSequenceActive = false;
     feederStopRequested = false;
