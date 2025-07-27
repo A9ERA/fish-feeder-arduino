@@ -7,7 +7,7 @@
 
 // Constants for solenoid valve timings
 #define SOLENOID_OPEN_DURATION 5    // 5 seconds for solenoid open
-#define SOLENOID_CLOSE_DURATION 10 // 10 seconds for solenoid close
+#define SOLENOID_CLOSE_DURATION 12 // 12 seconds for solenoid close
 
 // Weight monitoring constants
 #define WEIGHT_CHECK_INTERVAL 100    // Check weight every 100ms
@@ -144,7 +144,7 @@ void startFeederSequence(int feedAmount, int blowerDuration) {
     feederStopRequested = false;
     
     // Declare variables at the beginning to avoid goto bypass issues
-    int minDuration, remainingTime, totalSolenoidTime, remainingBlowerTime;
+    int remainingBlowerTime;
     
     Serial.println("[FEEDER] Starting automated feeder sequence");
     Serial.println("[FEEDER] Feed amount: " + String(feedAmount) + "g");
@@ -152,27 +152,20 @@ void startFeederSequence(int feedAmount, int blowerDuration) {
     // Step 1: Start blower and open solenoid valve simultaneously
     Serial.println("[FEEDER] Step 1: Starting blower and opening solenoid valve");
     Serial.println("[FEEDER] Blower duration: " + String(blowerDuration) + "s");
-    Serial.println("[FEEDER] Solenoid open duration: " + String(SOLENOID_OPEN_DURATION) + "s");
+    Serial.println("[FEEDER] Waiting for weight reduction of " + String(feedAmount) + "g");
     
     startBlower();
     solenoidValveOpen();
     
-    // Wait for solenoid open duration
-    if (!interruptibleDelay(SOLENOID_OPEN_DURATION * 1000)) {
+    // Wait for weight reduction (no time limit for solenoid open)
+    if (!waitForWeightReduction(feedAmount)) {
         solenoidValveStop();
         stopBlower();
         goto emergency_stop;
     }
-    solenoidValveStop();
-    Serial.println("[FEEDER] Step 1 completed: Solenoid valve open finished, blower continues");
+    Serial.println("[FEEDER] Step 1 completed: Target weight reduction achieved");
     
-    // Wait for weight reduction instead of fixed delay
-    if (!waitForWeightReduction(feedAmount)) {
-        stopBlower();
-        goto emergency_stop;
-    }
-    
-    // Step 2: Close solenoid valve (blower continues)
+    // Step 2: Close solenoid valve immediately when weight target is reached
     Serial.println("[FEEDER] Step 2: Closing solenoid valve for " + String(SOLENOID_CLOSE_DURATION) + " seconds");
     solenoidValveClose();
     if (!interruptibleDelay(SOLENOID_CLOSE_DURATION * 1000)) {
@@ -183,9 +176,8 @@ void startFeederSequence(int feedAmount, int blowerDuration) {
     solenoidValveStop();
     Serial.println("[FEEDER] Step 2 completed: Solenoid valve close finished, blower continues");
     
-    // Calculate remaining blower time
-    totalSolenoidTime = SOLENOID_OPEN_DURATION + SOLENOID_CLOSE_DURATION;
-    remainingBlowerTime = blowerDuration - totalSolenoidTime;
+    // Step 3: Continue blower for remaining duration
+    remainingBlowerTime = blowerDuration - SOLENOID_CLOSE_DURATION;
     
     if (remainingBlowerTime > 0) {
         Serial.println("[FEEDER] Step 3: Continuing blower for remaining " + String(remainingBlowerTime) + "s");

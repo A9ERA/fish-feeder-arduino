@@ -131,30 +131,38 @@ The system automatically reads and outputs sensor data in JSON format via serial
 ```
 
 ### Automated Feeder Sequence
-The Arduino now supports an automated feeding sequence that can be triggered with a single command from the Pi Server. The sequence runs to completion within the command with fixed solenoid valve timings:
+The Arduino now supports an automated feeding sequence that can be triggered with a single command from the Pi Server. The sequence uses weight-based control for precise feeding:
 
 ```
-[control]:feeder:start:blowerDuration
+[control]:feeder:start:feedAmount:blowerDuration
 [control]:feeder:stop
 ```
 
 **Parameters:**
+- `feedAmount`: Target weight reduction in grams
 - `blowerDuration`: Duration in seconds for blower operation
 
 **Fixed Timings:**
-- Solenoid valve open: 5 seconds (hardcoded in Arduino)
-- Solenoid valve close: 10 seconds (hardcoded in Arduino)
+- Solenoid valve close: 12 seconds (hardcoded in Arduino)
+- Solenoid valve open: No time limit (controlled by weight reduction)
 
 **Example:**
 ```
-[control]:feeder:start:8
+[control]:feeder:start:50:8
 ```
 This will run the following automated sequence (blocking operation):
-1. Open solenoid valve for 5 seconds (fixed), then stop
-2. Close solenoid valve for 10 seconds (fixed), then stop
-3. Start blower for 8 seconds
-4. Stop blower after 8 seconds
-5. Return when sequence is complete
+1. Start blower and open solenoid valve simultaneously
+2. Wait for weight reduction of 50g (no time limit)
+3. Close solenoid valve for 12 seconds (fixed), then stop
+4. Continue blower for remaining duration
+5. Stop blower after total duration
+6. Return when sequence is complete
+
+**Weight Monitoring:**
+- Checks weight every 100ms during feeding
+- Uses 5g tolerance for weight measurement
+- Maximum 30 seconds timeout for weight change
+- Automatically stops sensor service printing during weight monitoring
 
 **Emergency Stop:**
 ```
