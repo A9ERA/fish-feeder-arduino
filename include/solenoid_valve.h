@@ -11,6 +11,5 @@
 void initSolenoidValve();
 void solenoidValveOpen();
 void solenoidValveClose();
-void solenoidValveStop();
 
 #endif // SOLENOID_VALVE_H 

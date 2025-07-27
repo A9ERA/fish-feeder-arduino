@@ -65,13 +65,11 @@ Control the feeding mechanism solenoid valve:
 ```
 [control]:solenoid:open
 [control]:solenoid:close
-[control]:solenoid:stop
 ```
 
 **Commands:**
 - `open`: Open solenoid valve to dispense food
-- `close`: Close solenoid valve
-- `stop`: Stop solenoid valve operation
+- `close`: Close solenoid valve (stops operation)
 
 ### Relay Control Commands
 
@@ -143,8 +141,8 @@ The Arduino now supports an automated feeding sequence that can be triggered wit
 - `blowerDuration`: Duration in seconds for blower operation
 
 **Fixed Timings:**
-- Solenoid valve close: 12 seconds (hardcoded in Arduino)
 - Solenoid valve open: No time limit (controlled by weight reduction)
+- Solenoid valve close: Immediate stop (no duration)
 
 **Example:**
 ```
@@ -153,7 +151,7 @@ The Arduino now supports an automated feeding sequence that can be triggered wit
 This will run the following automated sequence (blocking operation):
 1. Start blower and open solenoid valve simultaneously
 2. Wait for weight reduction of 50g (no time limit)
-3. Close solenoid valve for 12 seconds (fixed), then stop
+3. Close solenoid valve immediately (no duration)
 4. Continue blower for remaining duration
 5. Stop blower after total duration
 6. Return when sequence is complete

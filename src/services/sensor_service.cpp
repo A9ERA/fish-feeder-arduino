@@ -245,8 +245,6 @@ void controlSensor() {
                     solenoidValveOpen();
                 } else if (rest == "close") {
                     solenoidValveClose();
-                } else if (rest == "stop") {
-                    solenoidValveStop();
                 }
                 break;
             case DEVICE_RELAY:
