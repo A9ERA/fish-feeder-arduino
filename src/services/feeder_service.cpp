@@ -79,7 +79,7 @@ bool waitForWeightReduction(float targetReduction) {
     
     // Get initial weight
     StaticJsonDocument<256> weightDoc = readWeight();
-    float initialWeight = weightDoc["weight"];
+    float initialWeight = weightDoc["value"][0]["value"].as<float>() * 1000.0f; // Convert kg to g
     Serial.println("[FEEDER] Initial weight: " + String(initialWeight) + "g");
     
     unsigned long startTime = millis();
@@ -106,7 +106,7 @@ bool waitForWeightReduction(float targetReduction) {
         
         // Read current weight
         weightDoc = readWeight();
-        currentWeight = weightDoc["weight"];
+        currentWeight = weightDoc["value"][0]["value"].as<float>() * 1000.0f; // Convert kg to g
         weightReduction = initialWeight - currentWeight;
         
         Serial.println("[FEEDER] Current weight: " + String(currentWeight) + "g, Reduction: " + String(weightReduction) + "g");
