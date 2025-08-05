@@ -19,7 +19,7 @@ void solenoidValveOpen() {
 
 void solenoidValveClose() {
     digitalWrite(SOL_IN1, LOW);
-    digitalWrite(SOL_IN2, LOW);
+    digitalWrite(SOL_IN2, HIGH);
     analogWrite(SOL_ENA, 0);
 }
 

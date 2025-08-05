@@ -144,7 +144,6 @@ void controlSensor() {
     // [control]:blower:direction:normal\n
     // [control]:solenoid:open\n
     // [control]:solenoid:close\n
-    // [control]:solenoid:stop\n
     // [control]:relay:led:on\n
     // [control]:relay:led:off\n
     // [control]:relay:fan:on\n
