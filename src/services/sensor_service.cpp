@@ -5,7 +5,7 @@
 #include "soil_sensor.h"
 #include "weight_sensor.h"
 #include "power_monitor.h"
-#include "solenoid_valve.h"
+#include "feeder_motor.h"
 #include "relay_control.h"
 #include "sensor_service.h"
 #include "feeder_service.h"
@@ -21,14 +21,14 @@ static bool sensorServiceActive = false;
 enum DeviceType {
     DEVICE_UNKNOWN,
     DEVICE_BLOWER,
-    DEVICE_SOLENOIDVALVE,
+    DEVICE_FEEDERMOTOR,
     DEVICE_RELAY,
     DEVICE_FEEDER
 };
 
 DeviceType parseDeviceType(const String& device) {
     if (device == "blower") return DEVICE_BLOWER;
-    if (device == "solenoid") return DEVICE_SOLENOIDVALVE;
+    if (device == "feedermotor") return DEVICE_FEEDERMOTOR;
     if (device == "relay") return DEVICE_RELAY;
     if (device == "feeder") return DEVICE_FEEDER;
     return DEVICE_UNKNOWN;
@@ -83,7 +83,7 @@ void initAllSensors() {
 
   // Control devices
   initBlower();
-  initSolenoidValve();
+  initFeederMotor();
   initRelayControl();
 }
 
@@ -142,8 +142,8 @@ void controlSensor() {
     // [control]:blower:speed:100\n
     // [control]:blower:direction:reverse\n
     // [control]:blower:direction:normal\n
-    // [control]:solenoid:open\n
-    // [control]:solenoid:close\n
+    // [control]:feedermotor:open\n
+    // [control]:feedermotor:close\n
     // [control]:relay:led:on\n
     // [control]:relay:led:off\n
     // [control]:relay:fan:on\n
@@ -239,11 +239,11 @@ void controlSensor() {
                     }
                 }
                 break;
-            case DEVICE_SOLENOIDVALVE:
+            case DEVICE_FEEDERMOTOR:
                 if (rest == "open") {
-                    solenoidValveOpen();
+                    feederMotorOpen();
                 } else if (rest == "close") {
-                    solenoidValveClose();
+                    feederMotorClose();
                 }
                 break;
             case DEVICE_RELAY:

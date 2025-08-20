@@ -12,7 +12,7 @@ An Arduino-based automated fish feeding system with environmental monitoring and
 - **Current Sensor** (ACS712)
 - **Voltage Sensor**
 - **Blower Motor** (for air circulation)
-- **Solenoid Valve** (for feeding mechanism)
+- **Feeder Motor** (for feeding mechanism)
 
 ## Software Dependencies
 
@@ -58,18 +58,18 @@ Control the air circulation blower:
 - `speed`: Integer value (0-255) for PWM speed control
 - `direction`: `reverse` or `normal` for motor direction
 
-### Solenoid Valve Control Commands
+### Feeder Motor Control Commands
 
-Control the feeding mechanism solenoid valve:
+Control the feeding mechanism feeder motor:
 
 ```
-[control]:solenoid:open
-[control]:solenoid:close
+[control]:feedermotor:open
+[control]:feedermotor:close
 ```
 
 **Commands:**
-- `open`: Open solenoid valve to dispense food
-- `close`: Close solenoid valve (stops operation)
+- `open`: Rotate CW to open/dispense
+- `close`: Rotate CCW to close/stop
 
 ### Relay Control Commands
 
@@ -114,11 +114,10 @@ The system automatically reads and outputs sensor data in JSON format via serial
 [control]:blower:speed:150
 ```
 
-### Controlling Feeder Solenoid Valve
+### Controlling Feeder Motor
 ```
-[control]:solenoid:open
-[control]:solenoid:stop
-[control]:solenoid:close
+[control]:feedermotor:open
+[control]:feedermotor:close
 ```
 
 ### Controlling Relays
@@ -141,17 +140,17 @@ The Arduino now supports an automated feeding sequence that can be triggered wit
 - `blowerDuration`: Duration in seconds for blower operation
 
 **Fixed Timings:**
-- Solenoid valve open: No time limit (controlled by weight reduction)
-- Solenoid valve close: Immediate stop (no duration)
+- Feeder motor open: No time limit (controlled by weight reduction)
+- Feeder motor close: Immediate stop (no duration)
 
 **Example:**
 ```
 [control]:feeder:start:50:8
 ```
 This will run the following automated sequence (blocking operation):
-1. Start blower and open solenoid valve simultaneously
+1. Start blower and open feeder motor simultaneously
 2. Wait for weight reduction of 50g (no time limit)
-3. Close solenoid valve immediately (no duration)
+3. Close feeder motor immediately (no duration)
 4. Continue blower for remaining duration
 5. Stop blower after total duration
 6. Return when sequence is complete
@@ -166,7 +165,7 @@ This will run the following automated sequence (blocking operation):
 ```
 [control]:feeder:stop
 ```
-This will interrupt the running sequence and immediately stop all feeder-related devices (solenoid valve, blower). The stop command is processed every 100ms during the sequence by calling `controlSensor()` within the delay loops, allowing for quick response even during blocking operations.
+This will interrupt the running sequence and immediately stop all feeder-related devices (feeder motor, blower). The stop command is processed every 100ms during the sequence by calling `controlSensor()` within the delay loops, allowing for quick response even during blocking operations.
 
 ### Reversing Blower Direction
 ```

@@ -1,12 +1,12 @@
 #include <Arduino.h>
-#include "solenoid_valve.h"
+#include "feeder_motor.h"
 #include "blower.h"
 #include "feeder_service.h"
 #include "sensor_service.h"
 #include "weight_sensor.h"
 
-// Constants for solenoid valve timings
-#define SOLENOID_OPEN_DURATION 5    // 5 seconds for solenoid open
+// Constants for feeder motor timings
+// #define FEEDER_MOTOR_OPEN_DURATION 5
 
 // Weight monitoring constants
 #define WEIGHT_CHECK_INTERVAL 100    // Check weight every 100ms
@@ -148,26 +148,26 @@ void startFeederSequence(int feedAmount, int blowerDuration) {
     Serial.println("[FEEDER] Starting automated feeder sequence");
     Serial.println("[FEEDER] Feed amount: " + String(feedAmount) + "g");
     
-    // Step 1: Start blower and open solenoid valve simultaneously
-    Serial.println("[FEEDER] Step 1: Starting blower and opening solenoid valve");
+    // Step 1: Start blower and open feeder motor simultaneously
+    Serial.println("[FEEDER] Step 1: Starting blower and opening feeder motor");
     Serial.println("[FEEDER] Blower duration: " + String(blowerDuration) + "s");
     Serial.println("[FEEDER] Waiting for weight reduction of " + String(feedAmount) + "g");
     
     startBlower();
-    solenoidValveOpen();
+    feederMotorOpen();
     
-    // Wait for weight reduction (no time limit for solenoid open)
+    // Wait for weight reduction (no time limit while motor is opening)
     if (!waitForWeightReduction(feedAmount)) {
-        solenoidValveClose();
+        feederMotorClose();
         stopBlower();
         goto emergency_stop;
     }
     Serial.println("[FEEDER] Step 1 completed: Target weight reduction achieved");
     
-    // Step 2: Close solenoid valve immediately when weight target is reached
-    Serial.println("[FEEDER] Step 2: Closing solenoid valve");
-    solenoidValveClose();
-    Serial.println("[FEEDER] Step 2 completed: Solenoid valve close finished, blower continues");
+    // Step 2: Close feeder motor immediately when weight target is reached
+    Serial.println("[FEEDER] Step 2: Closing feeder motor");
+    feederMotorClose();
+    Serial.println("[FEEDER] Step 2 completed: Feeder motor close finished, blower continues");
     
     // Step 3: Continue blower for remaining duration
     remainingBlowerTime = blowerDuration;
@@ -188,7 +188,7 @@ void startFeederSequence(int feedAmount, int blowerDuration) {
     return;
 
 emergency_stop:
-    solenoidValveClose();
+    feederMotorClose();
     stopBlower();
     feederSequenceActive = false;
     feederStopRequested = false;
