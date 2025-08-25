@@ -50,12 +50,14 @@ void initFeederMotor() {
 // Open: rotate CW at full speed
 void feederMotorOpen() {
     feederMotorSafeSet(FM_CW_DIR);
+    delay(1000);
+    feederMotorStop();
 }
 
 // Close: rotate CCW at full speed
 void feederMotorClose() {
     feederMotorSafeSet(FM_CCW_DIR);
-    delay(2000);
+    delay(1000);
     feederMotorStop();
 }
 
