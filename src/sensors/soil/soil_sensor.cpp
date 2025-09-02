@@ -11,14 +11,14 @@ StaticJsonDocument<256> readSoil() {
   JsonArray values = doc.createNestedArray("value");
 
   int soilRaw = analogRead(SOIL_PIN);
-  float soilMoisture = map(soilRaw, 300, 1023, 100, 0);  // Raw ต่ำ = ชื้นมาก
-  soilMoisture = constrain(soilMoisture, 0, 100);
+  
+  // ใช้ค่าที่วัดจริง
+  int DRY_ADC = 1023;  // แห้งสนิท
+  int WET_ADC = 950;   // จุ่มน้ำเต็มที่
 
-  // Serial.print("📟 Raw Value: ");
-  // Serial.print(soilRaw);
-  // Serial.print("  🌱 Soil Moisture: ");
-  // Serial.print(soilMoisture, 0);
-  // Serial.println(" %");
+  int soilMoisture = map(soilRaw, DRY_ADC, WET_ADC, 0, 100);
+  if (soilMoisture < 0) soilMoisture = 0;
+  if (soilMoisture > 100) soilMoisture = 100;
 
   JsonObject moistureValue = values.createNestedObject();
   moistureValue["type"] = "soil_moisture";
