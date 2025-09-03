@@ -17,7 +17,9 @@ static void printJson(String jsonString);
 static unsigned long sensorPrintInterval = 5000; // Default 5 seconds
 static unsigned long lastSensorPrintTime = 0;
 static bool sensorServiceActive = false;
-static bool isFreezingPowerMonitor = false;
+static bool isUseFreezeLoadV = false;
+static float freezeLoadV = 0.0;
+
 
 enum DeviceType {
     DEVICE_UNKNOWN,
@@ -67,6 +69,12 @@ static void printWeight() {
 static void printPowerMonitor() {
   String jsonString;
   StaticJsonDocument<1024> powerMonitor = readPowerMonitor();
+  if(isUseFreezeLoadV) {
+    powerMonitor["value"]["loadVoltage"] = freezeLoadV;
+  }else
+  {
+    freezeLoadV = powerMonitor["value"]["loadVoltage"];
+  }
   serializeJson(powerMonitor, jsonString);
   printJson(jsonString);
 }
@@ -86,7 +94,6 @@ void initAllSensors() {
   initBlower();
   initFeederMotor();
   initRelayControl();
-  isFreezingPowerMonitor = false;
 }
 
 // New timer-based sensor service functions
@@ -108,9 +115,7 @@ void updateSensorService() {
     printDHTFeeder();
     printSoil();
     printWeight();
-    if(!isFreezingPowerMonitor) {
-      printPowerMonitor();
-    }
+    printPowerMonitor();
     lastSensorPrintTime = currentMillis;
   }
 }
@@ -205,7 +210,6 @@ void controlSensor() {
         }
         
         DeviceType deviceType = parseDeviceType(device);
-        isFreezingPowerMonitor = true;
         switch (deviceType) {
             case DEVICE_FEEDER:
                 if (rest.startsWith("start:")) {
@@ -228,8 +232,10 @@ void controlSensor() {
                 break;
             case DEVICE_BLOWER:
                 if (rest == "start") {
+                    isUseFreezeLoadV = true;
                     startBlower();
                 } else if (rest == "stop") {
+                    isUseFreezeLoadV = false;
                     stopBlower();
                 } else if (rest.startsWith("speed:")) {
                     int speed = rest.substring(6).toInt();
@@ -254,18 +260,23 @@ void controlSensor() {
                 if (rest.startsWith("led:")) {
                     String ledCmd = rest.substring(4);
                     if (ledCmd == "on") {
+                        isUseFreezeLoadV = true;
                         relayLedOn();
                     } else if (ledCmd == "off") {
+                        isUseFreezeLoadV = false;
                         relayLedOff();
                     }
                 } else if (rest.startsWith("fan:")) {
                     String fanCmd = rest.substring(4);
                     if (fanCmd == "on") {
+                        isUseFreezeLoadV = true;
                         relayFanOn();
                     } else if (fanCmd == "off") {
+                        isUseFreezeLoadV = false;
                         relayFanOff();
                     }
                 } else if (rest == "all:off") {
+                    isUseFreezeLoadV = false;
                     relayAllOff();
                 }
                 break;
@@ -274,7 +285,6 @@ void controlSensor() {
                 Serial.println("[INFO] - Unknown device: " + device);
                 break;
         }
-        isFreezingPowerMonitor = false;
     }
 }
 
