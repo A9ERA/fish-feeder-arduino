@@ -17,6 +17,7 @@ static void printJson(String jsonString);
 static unsigned long sensorPrintInterval = 5000; // Default 5 seconds
 static unsigned long lastSensorPrintTime = 0;
 static bool sensorServiceActive = false;
+static bool isFreezingPowerMonitor = false;
 
 enum DeviceType {
     DEVICE_UNKNOWN,
@@ -85,6 +86,7 @@ void initAllSensors() {
   initBlower();
   initFeederMotor();
   initRelayControl();
+  isFreezingPowerMonitor = false;
 }
 
 // New timer-based sensor service functions
@@ -106,8 +108,9 @@ void updateSensorService() {
     printDHTFeeder();
     printSoil();
     printWeight();
-    printPowerMonitor();
-    
+    if(!isFreezingPowerMonitor) {
+      printPowerMonitor();
+    }
     lastSensorPrintTime = currentMillis;
   }
 }
@@ -202,6 +205,7 @@ void controlSensor() {
         }
         
         DeviceType deviceType = parseDeviceType(device);
+        isFreezingPowerMonitor = true;
         switch (deviceType) {
             case DEVICE_FEEDER:
                 if (rest.startsWith("start:")) {
@@ -270,6 +274,7 @@ void controlSensor() {
                 Serial.println("[INFO] - Unknown device: " + device);
                 break;
         }
+        isFreezingPowerMonitor = false;
     }
 }
 
