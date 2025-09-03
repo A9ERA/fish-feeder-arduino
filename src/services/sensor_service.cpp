@@ -69,12 +69,31 @@ static void printWeight() {
 static void printPowerMonitor() {
   String jsonString;
   StaticJsonDocument<1024> powerMonitor = readPowerMonitor();
-  if(isUseFreezeLoadV) {
-    powerMonitor["value"]["loadVoltage"] = freezeLoadV;
-  }else
-  {
-    freezeLoadV = powerMonitor["value"]["loadVoltage"];
+  // Adjust to new JSON structure where "value" is an array of objects {type, unit, value}
+  JsonArray values = powerMonitor["value"].as<JsonArray>();
+  if (!values.isNull()) {
+    if (isUseFreezeLoadV) {
+      for (JsonObject item : values) {
+        const char* type = item["type"];
+        if (type && strcmp(type, "loadVoltage") == 0) {
+          item["value"] = freezeLoadV;
+          break;
+        }
+      }
+    } else {
+      for (JsonObject item : values) {
+        const char* type = item["type"];
+        if (type && strcmp(type, "loadVoltage") == 0) {
+          freezeLoadV = item["value"].as<float>();
+          break;
+        }
+      }
+    }
   }
+  Serial.print("isUseFreezeLoadV: ");
+  Serial.println(isUseFreezeLoadV);
+  Serial.print("freezeLoadV: ");
+  Serial.println(freezeLoadV);
   serializeJson(powerMonitor, jsonString);
   printJson(jsonString);
 }
