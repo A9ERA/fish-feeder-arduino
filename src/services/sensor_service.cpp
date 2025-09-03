@@ -90,10 +90,6 @@ static void printPowerMonitor() {
       }
     }
   }
-  Serial.print("isUseFreezeLoadV: ");
-  Serial.println(isUseFreezeLoadV);
-  Serial.print("freezeLoadV: ");
-  Serial.println(freezeLoadV);
   serializeJson(powerMonitor, jsonString);
   printJson(jsonString);
 }
