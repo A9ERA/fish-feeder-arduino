@@ -148,12 +148,16 @@ void startFeederSequence(int feedAmount, int blowerDuration) {
     Serial.println("[FEEDER] Starting automated feeder sequence");
     Serial.println("[FEEDER] Feed amount: " + String(feedAmount) + "g");
     
-    // Step 1: Start blower and open feeder motor simultaneously
-    Serial.println("[FEEDER] Step 1: Starting blower and opening feeder motor");
+    // Step 1: Start blower, wait 5 seconds, then open feeder motor
+    Serial.println("[FEEDER] Step 1: Starting blower, waiting 5s, then opening feeder motor");
     Serial.println("[FEEDER] Blower duration: " + String(blowerDuration) + "s");
     Serial.println("[FEEDER] Waiting for weight reduction of " + String(feedAmount) + "g");
     
     startBlower();
+    if (!interruptibleDelay(5000)) {
+        stopBlower();
+        goto emergency_stop;
+    }
     feederMotorOpen();
     
     // Wait for weight reduction (no time limit while motor is opening)
