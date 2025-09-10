@@ -174,7 +174,7 @@ void controlSensor() {
     // [control]:relay:all:off\n
     
     // Feeder sequence controls:
-    // [control]:feeder:start:feedAmount,blowerDuration\n
+    // [control]:feeder:start:feedAmount,blowerDuration,weightTolerance\n
     // [control]:feeder:stop\n
     
     // Sensor service controls:
@@ -230,16 +230,21 @@ void controlSensor() {
                 if (rest.startsWith("start:")) {
                     String params = rest.substring(6);
                     
-                    // Parse parameters: feedAmount,blowerDuration
+                    // Parse parameters: feedAmount,blowerDuration,weightTolerance (all required)
                     int comma1 = params.indexOf(',');
-                    
                     if (comma1 != -1) {
                         int feedAmount = params.substring(0, comma1).toInt();
-                        int blowerDuration = params.substring(comma1 + 1).toInt();
-                        
-                        startFeederSequence(feedAmount, blowerDuration);
+                        String restParams = params.substring(comma1 + 1);
+                        int comma2 = restParams.indexOf(',');
+                        if (comma2 != -1) {
+                            int blowerDuration = restParams.substring(0, comma2).toInt();
+                            int weightTolerance = restParams.substring(comma2 + 1).toInt();
+                            startFeederSequence(feedAmount, blowerDuration, weightTolerance);
+                        } else {
+                            Serial.println("[ERROR] - Invalid feeder start parameters format. Expected: feedAmount,blowerDuration,weightTolerance");
+                        }
                     } else {
-                        Serial.println("[ERROR] - Invalid feeder start parameters format. Expected: feedAmount,blowerDuration");
+                        Serial.println("[ERROR] - Invalid feeder start parameters format. Expected: feedAmount,blowerDuration,weightTolerance");
                     }
                 } else if (rest == "stop") {
                     stopFeederSequence();

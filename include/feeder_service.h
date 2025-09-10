@@ -4,6 +4,7 @@
 // Feeder service control functions
 void initFeederService();
 void startFeederSequence(int feedAmount, int blowerDuration);
+void startFeederSequence(int feedAmount, int blowerDuration, int weightTolerance);
 void stopFeederSequence();
 
 #endif // FEEDER_SERVICE_H 

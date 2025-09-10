@@ -10,7 +10,8 @@
 
 // Weight monitoring constants
 #define WEIGHT_CHECK_INTERVAL 100    // Check weight every 100ms
-#define WEIGHT_TOLERANCE 5.0         // 5g tolerance for weight measurement
+// Default 5g (can be overridden from host command)
+static float g_weightTolerance = 5.0f;
 #define MAX_WEIGHT_WAIT_TIME 30000   // Maximum 30 seconds to wait for weight change
 
 // Feeder sequence status
@@ -86,7 +87,7 @@ bool waitForWeightReduction(float targetReduction) {
     float currentWeight = initialWeight;
     float weightReduction = 0.0;
     
-    while (weightReduction < (targetReduction - WEIGHT_TOLERANCE)) {
+    while (weightReduction < (targetReduction - g_weightTolerance)) {
         if (feederStopRequested) {
             Serial.println("[FEEDER] Weight monitoring stopped by user request");
             if (wasSensorActive) {
@@ -213,4 +214,10 @@ void stopFeederSequence() {
     } else {
         Serial.println("[FEEDER] No active sequence to stop");
     }
+}
+
+// Overload that allows specifying weight tolerance from host
+void startFeederSequence(int feedAmount, int blowerDuration, int weightTolerance) {
+    g_weightTolerance = (float)weightTolerance; // grams
+    startFeederSequence(feedAmount, blowerDuration);
 }
