@@ -62,7 +62,7 @@ bool interruptibleDelay(unsigned long delayMs) {
             return false; // Stop requested
         }
         
-        delay(100); // Small delay, check every 100ms
+        delay(10); // Faster responsiveness: check every 10ms
     }
     return true; // Completed normally
 }

@@ -4,6 +4,7 @@
 
 void setup() {
   Serial.begin(115200);
+  Serial.setTimeout(10);
   
   // Initialize all sensors and devices
   initAllSensors();
@@ -18,12 +19,11 @@ void setup() {
 }
 
 void loop() {
-  // Update sensor service (non-blocking, timer-based)
-  updateSensorService();
-  
-  // Handle control commands (non-blocking)
-  controlSensor();
-  
-  // Short delay to prevent overwhelming the system
-  delay(10); // Much shorter delay since we're not blocking on sensor reads
+  // Handle control commands first for immediate responsiveness
+  if (Serial.available()) {
+    controlSensor();
+  } else {
+    // Update sensor service (non-blocking, time-sliced). Skips if commands are waiting
+    updateSensorService();
+  }
 }

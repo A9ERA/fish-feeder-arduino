@@ -20,6 +20,12 @@ static bool sensorServiceActive = false;
 static bool isUseFreezeLoadV = false;
 static float freezeLoadV = 0.0;
 
+// Non-blocking step scheduler variables
+static const uint8_t kTotalSensors = 5;
+static uint8_t sensorIndex = 0;
+static unsigned long lastStepTime = 0;
+static unsigned long stepInterval = 1000; // ms
+
 
 enum DeviceType {
     DEVICE_UNKNOWN,
@@ -114,29 +120,38 @@ void initAllSensors() {
 // New timer-based sensor service functions
 void initSensorService() {
   lastSensorPrintTime = millis();
+  lastStepTime = millis();
   sensorServiceActive = true;
+  // Distribute sensor prints across the configured interval, with a sane minimum
+  stepInterval = max(200UL, sensorPrintInterval / kTotalSensors);
   Serial.println("[INFO] - Sensor service initialized in background mode");
 }
 
 void updateSensorService() {
   if (!sensorServiceActive) return;
   
+  // If there are incoming commands, skip sensor work to avoid blocking control path
+  if (Serial.available()) return;
+
   unsigned long currentMillis = millis();
-  
-  // Check if it's time to print sensor data
-  if (currentMillis - lastSensorPrintTime >= sensorPrintInterval) {
-    // Print all sensor data
-    printDHTSystem();
-    printDHTFeeder();
-    printSoil();
-    printWeight();
-    printPowerMonitor();
-    lastSensorPrintTime = currentMillis;
+
+  // Time-sliced: handle one sensor per tick
+  if (currentMillis - lastStepTime >= stepInterval) {
+    switch (sensorIndex) {
+      case 0: printDHTSystem();    break;
+      case 1: printDHTFeeder();    break;
+      case 2: printSoil();         break;
+      case 3: printWeight();       break;
+      case 4: printPowerMonitor(); break;
+    }
+    sensorIndex = (sensorIndex + 1) % kTotalSensors;
+    lastStepTime = currentMillis;
   }
 }
 
 void setSensorPrintInterval(unsigned long intervalMs) {
   sensorPrintInterval = intervalMs;
+  stepInterval = max(200UL, sensorPrintInterval / kTotalSensors);
   Serial.println("[INFO] - Sensor print interval set to: " + String(intervalMs) + "ms");
 }
 

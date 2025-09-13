@@ -8,7 +8,7 @@
 
 const int LOADCELL_DOUT_PIN = 28;
 const int LOADCELL_SCK_PIN = 26;
-const float FIXED_SCALE_FACTOR = 40101.f;
+const float FIXED_SCALE_FACTOR = 35445.f;
 
 // EEPROM addresses
 const int EEPROM_OFFSET_ADDR = 0;  // Address for storing offset value
